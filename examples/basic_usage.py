@@ -249,7 +249,6 @@ def all_params_test():
 
 if __name__ == "__main__":
     postprocess_pipeline()
-    sys.exit(0)
     # -- Actual API submission using V7Params directly --
     from midjourney_api.api import MidjourneyAPI
     from midjourney_api.auth import MidjourneyAuth

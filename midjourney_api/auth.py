@@ -129,15 +129,12 @@ class MidjourneyAuth:
         print("Please sign in with your Google account.")
 
         with sync_playwright() as p:
-            # Use real Chrome with automation detection disabled
-            # so Google OAuth doesn't block the login
             user_data = str(Path.home() / ".midjourney_browser")
             context = p.chromium.launch_persistent_context(
                 user_data_dir=user_data,
                 channel="chrome",
                 headless=False,
-                ignore_default_args=["--enable-automation"],
-                args=["--disable-blink-features=AutomationControlled"],
+                ignore_default_args=["--enable-automation", "--no-sandbox"],
             )
             page = context.pages[0] if context.pages else context.new_page()
             page.goto("https://www.midjourney.com/")
@@ -162,5 +159,5 @@ class MidjourneyAuth:
         if not self._env_path.exists():
             self._env_path.write_text("")
         set_key(str(self._env_path), "MJ_REFRESH_TOKEN", refresh_token)
-        print(f"Login successful! User ID: {self._user_id}")
+        print("Login successful!")
         print(f"Refresh token saved to {self._env_path}")
