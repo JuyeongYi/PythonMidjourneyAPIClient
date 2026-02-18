@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json as json_mod
+import mimetypes
+from pathlib import Path
 from typing import Any
 
 from curl_cffi import requests as curl_requests
+from curl_cffi.curl import CurlMime
 
 from midjourney.auth import MidjourneyAuth
 from midjourney.exceptions import MidjourneyError
@@ -62,11 +65,53 @@ class MidjourneyAPI:
             resp.raise_for_status()
         return resp.json() if resp.content else None
 
+    CDN_BASE = "https://cdn.midjourney.com/u"
+
+    def upload_image(self, file_path: str) -> str:
+        """Upload a local image file and return its CDN URL.
+
+        Uses /api/storage-upload-file with multipart/form-data.
+        """
+        self._auth.ensure_valid_token()
+
+        path = Path(file_path).resolve()
+        content_type = mimetypes.guess_type(str(path))[0] or "image/png"
+        mp = CurlMime()
+        mp.addpart(
+            name="file",
+            filename=path.name,
+            local_path=str(path),
+            content_type=content_type,
+        )
+
+        url = f"{BASE_URL}/api/storage-upload-file"
+        headers = {
+            "x-csrf-protection": "1",
+            "Cookie": self._auth.cookie_header(),
+            "Origin": BASE_URL,
+            "Referer": f"{BASE_URL}/imagine",
+        }
+        resp = self._session.post(
+            url,
+            headers=headers,
+            multipart=mp,
+            timeout=60,
+        )
+        if resp.status_code >= 400:
+            print(f"[DEBUG] POST /api/storage-upload-file → {resp.status_code}")
+            print(f"[DEBUG] Response: {resp.text[:500]}")
+            resp.raise_for_status()
+
+        data = resp.json()
+        bucket_pathname = data["bucketPathname"]
+        return f"{self.CDN_BASE}/{bucket_pathname}"
+
     def submit_job(
         self,
         params: BaseParams,
         mode: str = "fast",
         private: bool = False,
+        metadata: dict | None = None,
     ) -> Job:
         """Submit an image generation job."""
         full_prompt = params.build_prompt()
@@ -78,14 +123,20 @@ class MidjourneyAPI:
             "channelId": f"singleplayer_{user_id}",
             "f": {"mode": mode, "private": private},
             "roomId": None,
-            "metadata": {},
+            "metadata": metadata or {},
         }
 
         data = self._request("POST", "/api/submit-jobs", json=payload)
 
-        # Response: {"success": [{"job_id": "..."}], "failure": []}
+        # Response: {"success": [{"job_id": "..."}], "failure": [...]}
         job_id = ""
         if isinstance(data, dict):
+            failures = data.get("failure", [])
+            if failures:
+                fail = failures[0]
+                raise MidjourneyError(
+                    f"Job rejected: {fail.get('message', 'unknown error')}"
+                )
             success = data.get("success", [])
             if success:
                 job_id = success[0].get("job_id", "")

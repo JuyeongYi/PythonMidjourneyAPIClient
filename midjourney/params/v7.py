@@ -2,47 +2,89 @@
 
 from __future__ import annotations
 
-import re
-from typing import Optional
-
 from midjourney.exceptions import ValidationError
 from midjourney.params.base import BaseParams
+from midjourney.params.types import (
+    AspectRatio,
+    Chaos,
+    Draft,
+    ImageWeight,
+    Niji,
+    OmniRef,
+    OmniWeight,
+    Personalize,
+    Quality,
+    Raw,
+    Seed,
+    SpeedMode,
+    Stop,
+    StyleRef,
+    StyleWeight,
+    Stylize,
+    Tile,
+    Version,
+    VisibilityMode,
+    Weird,
+)
 
 
 class V7Params(BaseParams):
     """Midjourney V7 parameter set with full validation."""
+
+    _CAST_MAP: dict[str, type] = {
+        "ar": AspectRatio,
+        "chaos": Chaos,
+        "quality": Quality,
+        "seed": Seed,
+        "stylize": Stylize,
+        "weird": Weird,
+        "stop": Stop,
+        "iw": ImageWeight,
+        "sref": StyleRef,
+        "sw": StyleWeight,
+        "oref": OmniRef,
+        "ow": OmniWeight,
+        "personalize": Personalize,
+        "tile": Tile,
+        "raw": Raw,
+        "draft": Draft,
+        "niji": Niji,
+        "speed": SpeedMode,
+        "visibility": VisibilityMode,
+    }
+
+    VERSION = Version(7)
 
     def __init__(
         self,
         prompt: str,
         *,
         # Image generation
-        ar: Optional[str] = None,
-        chaos: Optional[int] = None,
-        no: Optional[str] = None,
-        quality: Optional[int] = None,
-        seed: Optional[int] = None,
-        stylize: Optional[int] = None,
-        weird: Optional[int] = None,
-        stop: Optional[int] = None,
-        tile: bool = False,
-        raw: bool = False,
-        draft: bool = False,
-        iw: Optional[float] = None,
+        ar: AspectRatio | None = None,
+        chaos: Chaos | None = None,
+        no: str | None = None,
+        quality: Quality | None = None,
+        seed: Seed | None = None,
+        stylize: Stylize | None = None,
+        weird: Weird | None = None,
+        stop: Stop | None = None,
+        tile: Tile = Tile(),
+        raw: Raw = Raw(),
+        draft: Draft = Draft(),
+        iw: ImageWeight | None = None,
         # Reference
-        sref: Optional[str] = None,
-        sw: Optional[int] = None,
-        oref: Optional[str] = None,
-        personalize: Optional[str] = None,
+        sref: StyleRef | None = None,
+        sw: StyleWeight | None = None,
+        oref: OmniRef | None = None,
+        ow: OmniWeight | None = None,
+        personalize: Personalize | None = None,
         # Mode
-        fast: bool = False,
-        relax: bool = False,
-        turbo: bool = False,
-        stealth: bool = False,
-        public: bool = False,
-        niji: bool = False,
+        niji: Niji | None = None,
+        speed: SpeedMode | None = None,
+        visibility: VisibilityMode | None = None,
     ):
         super().__init__(prompt)
+        self.version = self.VERSION
         # Image generation params
         self.ar = ar
         self.chaos = chaos
@@ -60,112 +102,89 @@ class V7Params(BaseParams):
         self.sref = sref
         self.sw = sw
         self.oref = oref
+        self.ow = ow
         self.personalize = personalize
         # Mode params
-        self.fast = fast
-        self.relax = relax
-        self.turbo = turbo
-        self.stealth = stealth
-        self.public = public
         self.niji = niji
+        self.speed = speed
+        self.visibility = visibility
 
     def validate(self) -> None:
+        """Cross-field validation only — range checks are handled by types."""
         errors: list[str] = []
 
-        if self.ar is not None and not re.match(r"^\d+:\d+$", self.ar):
-            errors.append(f"ar must be in w:h format (e.g., '16:9'), got '{self.ar}'")
+        if self.sw is not None and not self.sref:
+            errors.append("sw requires sref to be set")
 
-        if self.chaos is not None and not (0 <= self.chaos <= 100):
-            errors.append(f"chaos must be 0-100, got {self.chaos}")
+        if self.ow is not None and not self.oref:
+            errors.append("ow requires oref to be set")
 
-        if self.quality is not None and self.quality not in (1, 2, 4):
-            errors.append(f"quality must be 1, 2, or 4, got {self.quality}")
-
-        if self.seed is not None and not (0 <= self.seed <= 4294967295):
-            errors.append(f"seed must be 0-4294967295, got {self.seed}")
-
-        if self.stylize is not None and not (0 <= self.stylize <= 1000):
-            errors.append(f"stylize must be 0-1000, got {self.stylize}")
-
-        if self.weird is not None and not (0 <= self.weird <= 3000):
-            errors.append(f"weird must be 0-3000, got {self.weird}")
-
-        if self.stop is not None and not (10 <= self.stop <= 100):
-            errors.append(f"stop must be 10-100, got {self.stop}")
-
-        if self.iw is not None and not (0 <= self.iw <= 3):
-            errors.append(f"iw must be 0-3, got {self.iw}")
-
-        if self.sw is not None and not (0 <= self.sw <= 1000):
-            errors.append(f"sw must be 0-1000, got {self.sw}")
-
-        # Mutually exclusive speed modes
-        speed_modes = sum([self.fast, self.relax, self.turbo])
-        if speed_modes > 1:
-            errors.append("Only one speed mode allowed: fast, relax, or turbo")
-
-        # Mutually exclusive visibility modes
-        if self.stealth and self.public:
-            errors.append("stealth and public are mutually exclusive")
+        if self.niji is not None:
+            niji_incompatible = []
+            if self.oref:
+                niji_incompatible.append("oref")
+            if self.tile:
+                niji_incompatible.append("tile")
+            if self.quality is not None:
+                niji_incompatible.append("quality")
+            if niji_incompatible:
+                errors.append(
+                    f"{', '.join(niji_incompatible)} not compatible with niji"
+                )
 
         if errors:
             raise ValidationError("; ".join(errors))
 
     def to_prompt_suffix(self) -> str:
+        v = self.version
         parts: list[str] = []
 
-        # Always include version
-        if self.niji:
-            parts.append("--niji")
+        # Version — must come first
+        if self.niji is not None:
+            parts.append(self.niji.to_prompt(v))
         else:
-            parts.append("--v 7")
+            parts.append(v.to_prompt())
 
         # Image generation params
         if self.ar:
-            parts.append(f"--ar {self.ar}")
+            parts.append(self.ar.to_prompt(v))
         if self.chaos is not None:
-            parts.append(f"--c {self.chaos}")
+            parts.append(self.chaos.to_prompt(v))
         if self.no:
             parts.append(f"--no {self.no}")
         if self.quality is not None:
-            parts.append(f"--q {self.quality}")
+            parts.append(self.quality.to_prompt(v))
         if self.seed is not None:
-            parts.append(f"--seed {self.seed}")
+            parts.append(self.seed.to_prompt(v))
         if self.stylize is not None:
-            parts.append(f"--s {self.stylize}")
+            parts.append(self.stylize.to_prompt(v))
         if self.weird is not None:
-            parts.append(f"--w {self.weird}")
+            parts.append(self.weird.to_prompt(v))
         if self.stop is not None:
-            parts.append(f"--stop {self.stop}")
+            parts.append(self.stop.to_prompt(v))
         if self.tile:
-            parts.append("--tile")
+            parts.append(self.tile.to_prompt(v))
         if self.raw:
-            parts.append("--raw")
+            parts.append(self.raw.to_prompt(v))
         if self.draft:
-            parts.append("--draft")
+            parts.append(self.draft.to_prompt(v))
         if self.iw is not None:
-            parts.append(f"--iw {self.iw}")
+            parts.append(self.iw.to_prompt(v))
 
         # Reference params
         if self.sref:
-            parts.append(f"--sref {self.sref}")
-        if self.sw is not None:
-            parts.append(f"--sw {self.sw}")
+            parts.append(self.sref.to_prompt(v))
+            parts.append((self.sw if self.sw is not None else StyleWeight(100)).to_prompt(v))
         if self.oref:
-            parts.append(f"--oref {self.oref}")
+            parts.append(self.oref.to_prompt(v))
+            parts.append((self.ow if self.ow is not None else OmniWeight(100)).to_prompt(v))
         if self.personalize is not None:
-            parts.append(f"--p {self.personalize}" if self.personalize else "--p")
+            parts.append(self.personalize.to_prompt(v))
 
-        # Mode flags
-        if self.fast:
-            parts.append("--fast")
-        if self.relax:
-            parts.append("--relax")
-        if self.turbo:
-            parts.append("--turbo")
-        if self.stealth:
-            parts.append("--stealth")
-        if self.public:
-            parts.append("--public")
+        # Mode enums
+        if self.speed is not None:
+            parts.append(self.speed.to_prompt(v))
+        if self.visibility is not None:
+            parts.append(self.visibility.to_prompt(v))
 
         return " ".join(parts)

@@ -19,5 +19,11 @@ login = ["playwright>=1.40"]
 [project.scripts]
 midjourney = "midjourney.cli:main"
 
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = ["midjourney[login]"]
+
 [tool.setuptools.packages.find]
 include = ["midjourney*"]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
@@ -47,14 +48,48 @@ class MidjourneyClient:
     def login(self) -> None:
         """Open browser for Google OAuth login."""
         self._auth.login()
-        # Re-create API with refreshed auth
         self._api.close()
         self._api = MidjourneyAPI(self._auth)
+
+    def _upload_if_local(self, value: str) -> str:
+        """If value is a local file path, upload and return CDN URL."""
+        if os.path.exists(value):
+            print(f"  Uploading {value}...")
+            cdn_url = self._api.upload_image(value)
+            print(f"  → {cdn_url}")
+            return cdn_url
+        return value
+
+    def _resolve_image_refs(
+        self, image: str | None, params: dict,
+    ) -> tuple[str | None, dict[str, int]]:
+        """Upload local files for image/sref/oref, return (image_url, metadata).
+
+        Casting to typed params is left to create_params().
+        """
+        metadata: dict[str, int] = {}
+
+        if image:
+            image = self._upload_if_local(image)
+            metadata["imagePrompts"] = 1
+
+        if "sref" in params and params["sref"]:
+            raw = str(params["sref"])
+            params["sref"] = self._upload_if_local(raw)
+            if params["sref"].startswith("https://"):
+                metadata["imageReferences"] = 1
+
+        if "oref" in params and params["oref"]:
+            params["oref"] = self._upload_if_local(str(params["oref"]))
+            metadata["characterReferences"] = 1
+
+        return image, metadata
 
     def imagine(
         self,
         prompt: str,
         *,
+        image: str | None = None,
         version: int = 7,
         wait: bool = True,
         poll_interval: float = 5,
@@ -66,6 +101,7 @@ class MidjourneyClient:
 
         Args:
             prompt: Text description of the desired image.
+            image: Image prompt — local file path or URL.
             version: Midjourney model version (default: 7).
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
@@ -81,10 +117,15 @@ class MidjourneyClient:
             JobFailedError: If the job fails.
             MidjourneyError: On timeout or other errors.
         """
+        image, metadata = self._resolve_image_refs(image, params)
+
+        if image:
+            prompt = f"{image} {prompt}"
+
         p = create_params(version=version, prompt=prompt, **params)
         p.validate()
 
-        job = self._api.submit_job(p, mode=mode)
+        job = self._api.submit_job(p, mode=mode, metadata=metadata or None)
         print(f"Job submitted: {job.id}")
         print(f"Prompt: {p.build_prompt()}")
 
@@ -104,7 +145,6 @@ class MidjourneyClient:
             job = self._api.get_job_status(job_id)
 
             if job is not None:
-                # Job appearing in /api/imagine means it's completed
                 job.status = "completed"
                 job.progress = 100
                 if job.id:
@@ -127,17 +167,7 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Create a variation of a generated image.
-
-        Args:
-            job_id: Parent job ID.
-            index: Image index in the grid (0-3).
-            strong: True for Strong variation, False for Subtle.
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-        """
+        """Create a variation of a generated image."""
         job = self._api.submit_vary(job_id, index, strong=strong, mode=mode)
         label = "Strong" if strong else "Subtle"
         print(f"Vary ({label}) submitted: {job.id}")
@@ -157,17 +187,7 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Upscale a generated image.
-
-        Args:
-            job_id: Parent job ID.
-            index: Image index in the grid (0-3).
-            upscale_type: 'v7_2x_subtle' or 'v7_2x_creative'.
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-        """
+        """Upscale a generated image."""
         job = self._api.submit_upscale(
             job_id, index, upscale_type=upscale_type, mode=mode,
         )
@@ -177,7 +197,6 @@ class MidjourneyClient:
             return job
 
         job = self._poll_job(job.id, poll_interval, timeout)
-        # Upscale produces a single image, not a 4-image grid
         job.image_urls = [job.cdn_url(0)]
         return job
 
@@ -193,18 +212,7 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Pan (extend) an image in a direction.
-
-        Args:
-            job_id: Parent job ID.
-            index: Image index in the grid (0-3).
-            direction: 'up', 'down', 'left', or 'right'.
-            prompt: Prompt text (including parameters) for the panned area.
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-        """
+        """Pan (extend) an image in a direction."""
         job = self._api.submit_pan(
             job_id, index, direction=direction, prompt=prompt, mode=mode,
         )
@@ -221,17 +229,7 @@ class MidjourneyClient:
         size: int = 640,
         indices: list[int] | None = None,
     ) -> list[Path]:
-        """Download generated images to disk.
-
-        Args:
-            job: Completed Job object.
-            output_dir: Directory to save images.
-            size: Image size (e.g., 640, 1024).
-            indices: Which image variants to download (default: all 4).
-
-        Returns:
-            List of file paths for downloaded images.
-        """
+        """Download generated images to disk."""
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
 
@@ -255,11 +253,7 @@ class MidjourneyClient:
         return paths
 
     def list_jobs(self, limit: int = 50) -> list[Job]:
-        """List recent image generation jobs.
-
-        Args:
-            limit: Maximum number of jobs to return.
-        """
+        """List recent image generation jobs."""
         jobs = self._api.get_imagine_list(page_size=limit)
         return jobs[:limit]
 
