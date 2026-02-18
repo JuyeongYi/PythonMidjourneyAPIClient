@@ -5,12 +5,10 @@
     if (url?.includes('/api/')) {
       console.log(`[API] ${method} ${url}`);
       if (args[1]?.body) console.log('[BODY]', args[1].body);
-      console.log('[HEADERS]', JSON.stringify(args[1]?.headers));
-    }
-    const res = await _fetch(...args);
-    if (url?.includes('/api/')) {
+      const res = await _fetch(...args);
       const clone = res.clone();
       clone.json().then(data => console.log('[RESP]', url, JSON.stringify(data, null, 2))).catch(() => {});
+      return res;
     }
-    return res;
+    return _fetch(...args);
   };

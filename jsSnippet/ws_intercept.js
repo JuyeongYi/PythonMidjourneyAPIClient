@@ -1,4 +1,3 @@
-  // WebSocket 인터셉터
   const OrigWebSocket = window.WebSocket;
   window.WebSocket = function(...args) {
     console.log('[WS OPEN]', args[0]);
