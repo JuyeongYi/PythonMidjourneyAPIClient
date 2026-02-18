@@ -289,7 +289,7 @@ VisibilityMode.PUBLIC   # --public
 | Style Weight | `--sw` | `sw` | `StyleWeight` | 0–1000 (기본 100) |
 | Omni Ref | `--oref` | `oref` | `OmniRef` | URL/파일만 (코드 불가) |
 | Omni Weight | `--ow` | `ow` | `OmniWeight` | 1–1000 (기본 100) |
-| Personalize | — | `personalize` | `Personalize` | 코드/flag |
+| Personalize | `-p` | `personalize` | `Personalize` | 코드 문자열 (예: `ebcd5dd7-...`) 또는 빈 문자열(기본 적용) |
 | Niji | `--niji` | `niji` | `Niji` | 버전 정수 (예: 7), `--v` 대체 |
 | Speed | `--mode` | `speed` | `SpeedMode` | fast/relax/turbo |
 | Visibility | `--visibility` | `visibility` | `VisibilityMode` | stealth/public |

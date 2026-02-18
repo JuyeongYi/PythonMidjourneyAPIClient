@@ -70,6 +70,8 @@ def cmd_imagine(args: argparse.Namespace) -> None:
         params["sw"] = args.sw
     if args.niji is not None:
         params["niji"] = args.niji
+    if args.personalize is not None:
+        params["personalize"] = args.personalize
     if args.visibility:
         params["visibility"] = args.visibility
 
@@ -183,6 +185,8 @@ def main() -> None:
     p_imagine.add_argument("--oref", help="Object/character reference (local file or URL)")
     p_imagine.add_argument("--ow", type=OmniWeight, help="1-1000, default 100")
     p_imagine.add_argument("--sw", type=StyleWeight, help="0-1000, default 100")
+    p_imagine.add_argument("-p", "--personalize", nargs="?", const="", default=None,
+                           help="Personalization code (omit value for default)")
     p_imagine.add_argument("--niji", type=int, default=None, help="Niji model version (e.g. 7)")
     p_imagine.add_argument("-v", "--version", type=int, default=7, help="Model version")
     p_imagine.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
