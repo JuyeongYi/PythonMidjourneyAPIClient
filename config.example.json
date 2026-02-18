@@ -1,0 +1,8 @@
+{
+  "base_url": "https://www.midjourney.com",
+  "default_version": 7,
+  "default_mode": "fast",
+  "poll_interval": 5,
+  "download_size": 640,
+  "output_dir": "./images"
+}
