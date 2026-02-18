@@ -15,7 +15,7 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv, set_key
 
-from midjourney.exceptions import AuthenticationError
+from midjourney_api.exceptions import AuthenticationError
 
 FIREBASE_API_KEY = "AIzaSyAjizp68NsH3JGUS0EyLXsChW4fN0A92tM"
 FIREBASE_TOKEN_URL = (

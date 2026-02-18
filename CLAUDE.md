@@ -19,13 +19,13 @@ uv run midjourney download <job_id>                  # Download images
 
 ## Architecture
 
-- `midjourney/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan
-- `midjourney/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`)
-- `midjourney/auth.py` — Firebase Auth / token refresh
-- `midjourney/models.py` — Dataclass models (`Job`, `UserSettings`)
-- `midjourney/params/` — Version-specific parameter classes (`BaseParams` ABC → `V7Params`)
-- `midjourney/exceptions.py` — Custom exceptions
-- `midjourney/cli.py` — CLI entry point (`pyproject.toml` → `midjourney.cli:main`)
+- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan
+- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`)
+- `midjourney_api/auth.py` — Firebase Auth / token refresh
+- `midjourney_api/models.py` — Dataclass models (`Job`, `UserSettings`)
+- `midjourney_api/params/` — Version-specific parameter classes (`BaseParams` ABC → `V7Params`)
+- `midjourney_api/exceptions.py` — Custom exceptions
+- `midjourney_api/cli.py` — CLI entry point (`pyproject.toml` → `midjourney_api.cli:main`)
 
 ## Conventions
 

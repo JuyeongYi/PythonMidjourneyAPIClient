@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from midjourney.exceptions import ValidationError
-from midjourney.params.base import BaseParams
-from midjourney.params.types import (
+from midjourney_api.exceptions import ValidationError
+from midjourney_api.params.base import BaseParams
+from midjourney_api.params.types import (
     AspectRatio,
     Chaos,
     Draft,

@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from midjourney.params.types import (
+from midjourney_api.params.types import (
     AspectRatio,
     Chaos,
     ImageWeight,
@@ -24,7 +24,7 @@ from midjourney.params.types import (
 
 def cmd_login(args: argparse.Namespace) -> None:
     """Handle the login command."""
-    from midjourney.client import MidjourneyClient
+    from midjourney_api.client import MidjourneyClient
 
     client = MidjourneyClient(env_path=args.env)
     client.login()
@@ -33,7 +33,7 @@ def cmd_login(args: argparse.Namespace) -> None:
 
 def cmd_imagine(args: argparse.Namespace) -> None:
     """Handle the imagine command."""
-    from midjourney.client import MidjourneyClient
+    from midjourney_api.client import MidjourneyClient
 
     params = {}
     if args.ar:
@@ -87,7 +87,7 @@ def cmd_imagine(args: argparse.Namespace) -> None:
 
 def cmd_list(args: argparse.Namespace) -> None:
     """Handle the list command."""
-    from midjourney.client import MidjourneyClient
+    from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env) as client:
         jobs = client.list_jobs(limit=args.limit)
@@ -100,7 +100,7 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 def cmd_vary(args: argparse.Namespace) -> None:
     """Handle the vary command."""
-    from midjourney.client import MidjourneyClient
+    from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env) as client:
         job = client.vary(
@@ -114,7 +114,7 @@ def cmd_vary(args: argparse.Namespace) -> None:
 
 def cmd_upscale(args: argparse.Namespace) -> None:
     """Handle the upscale command."""
-    from midjourney.client import MidjourneyClient
+    from midjourney_api.client import MidjourneyClient
 
     type_map = {"subtle": "v7_2x_subtle", "creative": "v7_2x_creative"}
     with MidjourneyClient(env_path=args.env) as client:
@@ -129,7 +129,7 @@ def cmd_upscale(args: argparse.Namespace) -> None:
 
 def cmd_pan(args: argparse.Namespace) -> None:
     """Handle the pan command."""
-    from midjourney.client import MidjourneyClient
+    from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env) as client:
         job = client.pan(
@@ -144,8 +144,8 @@ def cmd_pan(args: argparse.Namespace) -> None:
 
 def cmd_download(args: argparse.Namespace) -> None:
     """Handle the download command."""
-    from midjourney.client import MidjourneyClient
-    from midjourney.models import Job
+    from midjourney_api.client import MidjourneyClient
+    from midjourney_api.models import Job
 
     with MidjourneyClient(env_path=args.env) as client:
         job = Job(id=args.job_id, prompt="", status="completed", user_id=client.user_id)

@@ -1,7 +1,8 @@
 """Basic usage examples for the Midjourney API client."""
 
-from midjourney import MidjourneyClient
-from midjourney.params import create_params
+import sys
+from midjourney_api import MidjourneyClient
+from midjourney_api.params import create_params
 
 
 # --- Example 1: Simple image generation ---
@@ -99,10 +100,10 @@ def image_references_via_client():
 # V7Params를 직접 만들 때는 업로드를 직접 처리해야 한다.
 # OmniRef/StyleRef 등은 프롬프트 파라미터이므로 URL만 허용한다.
 def image_references_via_params():
-    from midjourney.api import MidjourneyAPI
-    from midjourney.auth import MidjourneyAuth
-    from midjourney.params.v7 import V7Params
-    from midjourney.params.types import (
+    from midjourney_api.api import MidjourneyAPI
+    from midjourney_api.auth import MidjourneyAuth
+    from midjourney_api.params.v7 import V7Params
+    from midjourney_api.params.types import (
         AspectRatio, OmniRef, OmniWeight, StyleRef, StyleWeight,
     )
 
@@ -133,7 +134,7 @@ def image_references_via_params():
 
 # --- Example 7: Download by job ID ---
 def download_existing():
-    from midjourney.models import Job
+    from midjourney_api.models import Job
 
     with MidjourneyClient() as client:
         job = Job(id="your-job-id-here", prompt="", status="completed")
@@ -142,7 +143,7 @@ def download_existing():
 
 # --- Example 8: All parameters test (no auth required) ---
 def all_params_test():
-    from midjourney.params.types import (
+    from midjourney_api.params.types import (
         AspectRatio, Chaos, Draft, ImageWeight, Niji,
         OmniRef, OmniWeight, Personalize, Quality,
         Raw, Seed, SpeedMode, Stop, StyleRef,
@@ -151,7 +152,7 @@ def all_params_test():
 
 
     # -- Validation errors --
-    from midjourney.exceptions import ValidationError
+    from midjourney_api.exceptions import ValidationError
     import traceback
 
     error_cases = [
@@ -182,7 +183,7 @@ def all_params_test():
             pass
 
     # -- Full prompt build (using typed instances directly) --
-    from midjourney.params.v7 import V7Params
+    from midjourney_api.params.v7 import V7Params
 
     p = V7Params(
         prompt="a red apple",
@@ -247,11 +248,13 @@ def all_params_test():
 
 
 if __name__ == "__main__":
+    postprocess_pipeline()
+    sys.exit(0)
     # -- Actual API submission using V7Params directly --
-    from midjourney.api import MidjourneyAPI
-    from midjourney.auth import MidjourneyAuth
-    from midjourney.params.v7 import V7Params
-    from midjourney.params.types import (
+    from midjourney_api.api import MidjourneyAPI
+    from midjourney_api.auth import MidjourneyAuth
+    from midjourney_api.params.v7 import V7Params
+    from midjourney_api.params.types import (
         AspectRatio, Chaos, ImageWeight, OmniRef, OmniWeight,
         Personalize, Quality, Raw, Seed, SpeedMode, StyleRef,
         StyleWeight, Stylize, Tile, VisibilityMode, Weird, Niji

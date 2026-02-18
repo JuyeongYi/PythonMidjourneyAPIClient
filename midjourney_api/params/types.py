@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from enum import StrEnum
 
-from midjourney.exceptions import ValidationError
+from midjourney_api.exceptions import ValidationError
 
 
 # -- Version ------------------------------------------------------------------

@@ -6,9 +6,9 @@ Raw values (int, str, bool) are automatically cast to typed parameters.
 
 from __future__ import annotations
 
-from midjourney.params.base import BaseParams
-from midjourney.params.types import Version
-from midjourney.params.v7 import V7Params
+from midjourney_api.params.base import BaseParams
+from midjourney_api.params.types import Version
+from midjourney_api.params.v7 import V7Params
 
 _VERSION_MAP: dict[int, type[BaseParams]] = {
     7: V7Params,

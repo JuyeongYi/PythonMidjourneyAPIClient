@@ -10,10 +10,10 @@ from typing import Any
 from curl_cffi import requests as curl_requests
 from curl_cffi.curl import CurlMime
 
-from midjourney.auth import MidjourneyAuth
-from midjourney.exceptions import MidjourneyError
-from midjourney.models import Job, UserSettings
-from midjourney.params.base import BaseParams
+from midjourney_api.auth import MidjourneyAuth
+from midjourney_api.exceptions import MidjourneyError
+from midjourney_api.models import Job, UserSettings
+from midjourney_api.params.base import BaseParams
 
 BASE_URL = "https://www.midjourney.com"
 

@@ -8,11 +8,11 @@ from pathlib import Path
 
 from curl_cffi import requests as curl_requests
 
-from midjourney.api import MidjourneyAPI
-from midjourney.auth import MidjourneyAuth
-from midjourney.exceptions import JobFailedError, MidjourneyError
-from midjourney.models import Job, UserSettings
-from midjourney.params import create_params
+from midjourney_api.api import MidjourneyAPI
+from midjourney_api.auth import MidjourneyAuth
+from midjourney_api.exceptions import JobFailedError, MidjourneyError
+from midjourney_api.models import Job, UserSettings
+from midjourney_api.params import create_params
 
 
 class MidjourneyClient:

@@ -107,7 +107,7 @@ midjourney download <job_id> -o ./images --size 1024
 ### 기본 사용
 
 ```python
-from midjourney import MidjourneyClient
+from midjourney_api import MidjourneyClient
 
 with MidjourneyClient() as client:
     job = client.imagine(
@@ -152,10 +152,10 @@ with MidjourneyClient() as client:
 파라미터 타입(`OmniRef`, `StyleRef` 등)은 프롬프트 값이므로 URL만 허용한다.
 
 ```python
-from midjourney.api import MidjourneyAPI
-from midjourney.auth import MidjourneyAuth
-from midjourney.params.v7 import V7Params
-from midjourney.params.types import AspectRatio, OmniRef, OmniWeight, StyleRef, StyleWeight
+from midjourney_api.api import MidjourneyAPI
+from midjourney_api.auth import MidjourneyAuth
+from midjourney_api.params.v7 import V7Params
+from midjourney_api.params.types import AspectRatio, OmniRef, OmniWeight, StyleRef, StyleWeight
 
 auth = MidjourneyAuth()
 api = MidjourneyAPI(auth)
@@ -202,7 +202,7 @@ with MidjourneyClient() as client:
 
 ```python
 # 1) create_params — 원시값(int, str, bool)을 자동 캐스팅
-from midjourney.params import create_params
+from midjourney_api.params import create_params
 
 p = create_params(
     version=7,
@@ -217,8 +217,8 @@ print(p.build_prompt())
 # → a sunset --v 7 --ar 16:9 --s 500 --fast --stealth
 
 # 2) V7Params — 타입 인스턴스 직접 전달
-from midjourney.params.v7 import V7Params
-from midjourney.params.types import AspectRatio, Stylize, SpeedMode, VisibilityMode
+from midjourney_api.params.v7 import V7Params
+from midjourney_api.params.types import AspectRatio, Stylize, SpeedMode, VisibilityMode
 
 p = V7Params(
     prompt="a sunset",
@@ -235,7 +235,7 @@ p = V7Params(
 생성 시점에서 값 범위를 검증하고, `to_prompt(version)` 메서드로 프롬프트 조각을 생성한다.
 
 ```python
-from midjourney.params.types import Stylize, SpeedMode, Version
+from midjourney_api.params.types import Stylize, SpeedMode, Version
 
 Stylize(500)        # OK
 Stylize(1001)       # ValidationError: stylize must be 0-1000
@@ -249,16 +249,16 @@ SpeedMode("slow")   # ValidationError: SpeedMode must be one of [...]
 | 이산 정수 | `Quality` | `int` | 1, 2, 4만 허용 |
 | 범위 실수 | `ImageWeight` | `float` | 범위 제한 |
 | 문자열 | `AspectRatio`, `StyleRef`, `OmniRef`, `Personalize` | `str` | 형식 검증 |
-| 플래그 | `Tile`, `Raw`, `Draft`, `Niji` | `int` | bool-like (True/False) |
+| 플래그 | `Tile`, `Raw`, `Draft` | `int` | bool-like (True/False) |
 | 모드 Enum | `SpeedMode`, `VisibilityMode` | `StrEnum` | 상호 배제 |
-| 버전 | `Version` | `int` | 지원 버전만 허용 |
+| 버전 | `Version`, `Niji` | `int` | 지원 버전만 허용 (`--v 7` / `--niji 7`) |
 
 ### SpeedMode / VisibilityMode
 
 상호 배제 파라미터는 `StrEnum`으로 구현되어, 잘못된 조합이 구조적으로 불가능하다.
 
 ```python
-from midjourney.params.types import SpeedMode, VisibilityMode
+from midjourney_api.params.types import SpeedMode, VisibilityMode
 
 SpeedMode.FAST          # --fast
 SpeedMode.RELAX         # --relax
@@ -290,7 +290,7 @@ VisibilityMode.PUBLIC   # --public
 | Omni Ref | `--oref` | `oref` | `OmniRef` | URL/파일만 (코드 불가) |
 | Omni Weight | `--ow` | `ow` | `OmniWeight` | 1–1000 (기본 100) |
 | Personalize | — | `personalize` | `Personalize` | 코드/flag |
-| Niji | `--niji` | `niji` | `Niji` | flag |
+| Niji | `--niji` | `niji` | `Niji` | 버전 정수 (예: 7), `--v` 대체 |
 | Speed | `--mode` | `speed` | `SpeedMode` | fast/relax/turbo |
 | Visibility | `--visibility` | `visibility` | `VisibilityMode` | stealth/public |
 
@@ -298,7 +298,7 @@ VisibilityMode.PUBLIC   # --public
 
 ```
 ├── pyproject.toml              # 패키지 설정 (uv sync)
-├── midjourney/
+├── midjourney_api/
 │   ├── __init__.py             # 공개 API export
 │   ├── cli.py                  # CLI 구현 (argparse)
 │   ├── client.py               # MidjourneyClient (고수준 API)
