@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import json as json_mod
 from typing import Any
 
-import httpx
+from curl_cffi import requests as curl_requests
 
 from midjourney.auth import MidjourneyAuth
 from midjourney.exceptions import MidjourneyError
@@ -15,25 +16,50 @@ BASE_URL = "https://www.midjourney.com"
 
 
 class MidjourneyAPI:
-    """Low-level HTTP client for the Midjourney REST API."""
+    """Low-level HTTP client for the Midjourney REST API.
+
+    Uses curl_cffi to impersonate Chrome's TLS fingerprint,
+    bypassing Cloudflare bot protection.
+    """
 
     def __init__(self, auth: MidjourneyAuth):
         self._auth = auth
-        self._client = httpx.Client(base_url=BASE_URL, timeout=30)
+        self._session = curl_requests.Session(impersonate="chrome")
 
     def close(self) -> None:
-        self._client.close()
+        self._session.close()
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         """Make an authenticated request."""
         self._auth.ensure_valid_token()
-        headers = {**self._auth.get_headers(), **kwargs.pop("headers", {})}
-        cookies = {**self._auth.get_cookies(), **kwargs.pop("cookies", {})}
 
-        resp = self._client.request(
-            method, path, headers=headers, cookies=cookies, **kwargs
+        url = f"{BASE_URL}{path}"
+        headers = {
+            "x-csrf-protection": "1",
+            "Cookie": self._auth.cookie_header(),
+            "Origin": BASE_URL,
+            "Referer": f"{BASE_URL}/imagine",
+            **kwargs.pop("headers", {}),
+        }
+        kwargs.pop("cookies", None)
+
+        # curl_cffi uses 'data' for form and 'json' kwarg doesn't exist;
+        # serialize JSON manually
+        json_body = kwargs.pop("json", None)
+        if json_body is not None:
+            headers["Content-Type"] = "application/json"
+            kwargs["data"] = json_mod.dumps(json_body)
+
+        resp = self._session.request(
+            method, url, headers=headers, timeout=30, **kwargs
         )
-        resp.raise_for_status()
+        if resp.status_code >= 400:
+            cookie_hdr = self._auth.cookie_header()
+            print(f"[DEBUG] {method} {path} → {resp.status_code}")
+            print(f"[DEBUG] Cookie: {cookie_hdr[:80]}...({len(cookie_hdr)} chars)")
+            print(f"[DEBUG] User ID: {self._auth.user_id}")
+            print(f"[DEBUG] Response: {resp.text[:500]}")
+            resp.raise_for_status()
         return resp.json() if resp.content else None
 
     def submit_job(
@@ -42,16 +68,7 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit an image generation job.
-
-        Args:
-            params: Validated parameter object (call params.validate() before).
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            private: Whether to generate in stealth mode.
-
-        Returns:
-            A Job with the initial status.
-        """
+        """Submit an image generation job."""
         full_prompt = params.build_prompt()
         user_id = self._auth.user_id
 
@@ -66,12 +83,14 @@ class MidjourneyAPI:
 
         data = self._request("POST", "/api/submit-jobs", json=payload)
 
-        # The response may contain a job_id or job details
+        # Response: {"success": [{"job_id": "..."}], "failure": []}
         job_id = ""
         if isinstance(data, dict):
-            job_id = data.get("job_id", data.get("id", ""))
-        elif isinstance(data, list) and data:
-            job_id = data[0].get("job_id", data[0].get("id", ""))
+            success = data.get("success", [])
+            if success:
+                job_id = success[0].get("job_id", "")
+            else:
+                job_id = data.get("job_id", data.get("id", ""))
 
         return Job(
             id=job_id,
@@ -80,39 +99,37 @@ class MidjourneyAPI:
             user_id=user_id,
         )
 
-    def get_imagine_update(
-        self, checkpoint: str = "", page_size: int = 1000
-    ) -> tuple[list[Job], str]:
-        """Poll for job status updates.
-
-        Args:
-            checkpoint: Cursor from previous call for incremental updates.
-            page_size: Number of results per page.
-
-        Returns:
-            Tuple of (list of updated Jobs, new checkpoint cursor).
-        """
+    def get_job_status(self, job_id: str) -> Job | None:
+        """Check if a job appears in the imagine list (= completed)."""
         user_id = self._auth.user_id
-        params = {"user_id": user_id, "page_size": page_size}
-        if checkpoint:
-            params["checkpoint"] = checkpoint
+        data = self._request(
+            "GET", "/api/imagine",
+            params={"user_id": user_id, "page_size": 100},
+        )
 
-        data = self._request("GET", "/api/imagine-update", params=params)
-        jobs = self._parse_jobs(data)
-        new_checkpoint = ""
+        raw_items = data if isinstance(data, list) else []
         if isinstance(data, dict):
-            new_checkpoint = data.get("checkpoint", "")
-        return jobs, new_checkpoint
+            for key in ("jobs", "items", "data"):
+                if key in data and isinstance(data[key], list):
+                    raw_items = data[key]
+                    break
+
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            item_id = item.get("id", item.get("job_id", ""))
+            if item_id == job_id:
+                return Job(
+                    id=item_id,
+                    prompt=item.get("prompt", item.get("full_command", "")),
+                    status="completed",
+                    progress=100,
+                    user_id=item.get("user_id", ""),
+                )
+        return None
 
     def get_imagine_list(self, page_size: int = 1000) -> list[Job]:
-        """Fetch the full list of generated images.
-
-        Args:
-            page_size: Number of results per page.
-
-        Returns:
-            List of Job objects.
-        """
+        """Fetch the full list of generated images."""
         user_id = self._auth.user_id
         data = self._request(
             "GET", "/api/imagine",
@@ -160,7 +177,6 @@ class MidjourneyAPI:
                 user_id=item.get("user_id", ""),
                 enqueue_time=item.get("enqueue_time"),
             )
-            # Build image URLs if completed
             if job.is_completed and job.id:
                 job.image_urls = [job.cdn_url(i) for i in range(4)]
             jobs.append(job)

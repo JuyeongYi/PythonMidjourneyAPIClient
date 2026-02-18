@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-import httpx
+from curl_cffi import requests as curl_requests
 
 from midjourney.api import MidjourneyAPI
 from midjourney.auth import MidjourneyAuth
@@ -96,23 +96,21 @@ class MidjourneyClient:
     def _poll_job(
         self, job_id: str, interval: float, timeout: float
     ) -> Job:
-        """Poll until a job completes or fails."""
+        """Poll /api/imagine until the job appears (= completed)."""
         start = time.time()
-        last_progress = -1
+        print("  Waiting for completion...")
 
         while time.time() - start < timeout:
-            jobs, _ = self._api.get_imagine_update()
-            for job in jobs:
-                if job.id == job_id:
-                    if job.progress != last_progress:
-                        last_progress = job.progress
-                        print(f"  Progress: {job.progress}%")
+            job = self._api.get_job_status(job_id)
 
-                    if job.is_completed:
-                        print("Job completed!")
-                        return job
-                    if job.is_failed:
-                        raise JobFailedError(job_id)
+            if job is not None:
+                # Job appearing in /api/imagine means it's completed
+                job.status = "completed"
+                job.progress = 100
+                if job.id:
+                    job.image_urls = [job.cdn_url(i) for i in range(4)]
+                print("  Completed!")
+                return job
 
             time.sleep(interval)
 
@@ -148,11 +146,10 @@ class MidjourneyClient:
             file_path = out / f"{job.id}_{idx}.webp"
 
             print(f"Downloading image {idx}...")
-            with httpx.stream("GET", url, timeout=60) as resp:
-                resp.raise_for_status()
-                with open(file_path, "wb") as f:
-                    for chunk in resp.iter_bytes(8192):
-                        f.write(chunk)
+            resp = curl_requests.get(url, timeout=60, impersonate="chrome")
+            resp.raise_for_status()
+            with open(file_path, "wb") as f:
+                f.write(resp.content)
 
             paths.append(file_path)
             print(f"  Saved: {file_path}")

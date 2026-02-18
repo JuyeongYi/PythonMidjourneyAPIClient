@@ -103,15 +103,13 @@ class MidjourneyAuth:
         except (IndexError, json.JSONDecodeError, KeyError) as e:
             raise AuthenticationError(f"Failed to parse JWT: {e}") from e
 
-    def get_headers(self) -> dict[str, str]:
-        """Return headers required for authenticated API requests."""
+    def cookie_header(self) -> str:
+        """Return the Cookie header string with both ID and refresh tokens."""
         self.ensure_valid_token()
-        return {"x-csrf-protection": "1"}
-
-    def get_cookies(self) -> dict[str, str]:
-        """Return cookies required for authenticated API requests."""
-        self.ensure_valid_token()
-        return {ID_COOKIE_NAME: self._id_token}
+        return (
+            f"{ID_COOKIE_NAME}={self._id_token}; "
+            f"{REFRESH_COOKIE_NAME}={self._refresh_token}"
+        )
 
     def login(self) -> None:
         """Open a browser for Google OAuth login and extract the refresh token.
@@ -131,9 +129,17 @@ class MidjourneyAuth:
         print("Please sign in with your Google account.")
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
-            context = browser.new_context()
-            page = context.new_page()
+            # Use real Chrome with automation detection disabled
+            # so Google OAuth doesn't block the login
+            user_data = str(Path.home() / ".midjourney_browser")
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=user_data,
+                channel="chrome",
+                headless=False,
+                ignore_default_args=["--enable-automation"],
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            page = context.pages[0] if context.pages else context.new_page()
             page.goto("https://www.midjourney.com/")
 
             # Wait for user to complete login — poll for the refresh token cookie
@@ -147,7 +153,7 @@ class MidjourneyAuth:
                         refresh_token = cookie["value"]
                         break
 
-            browser.close()
+            context.close()
 
         self._refresh_token = refresh_token
         self._do_refresh()
