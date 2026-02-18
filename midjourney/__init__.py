@@ -5,7 +5,9 @@ Usage:
 
     with MidjourneyClient() as client:
         job = client.imagine("a red apple", ar="16:9")
-        client.download_images(job, "./images")
+        varied = client.vary(job.id, 0, strong=True)
+        upscaled = client.upscale(varied.id, 0)
+        client.download_images(upscaled, "./images")
 """
 
 from midjourney.client import MidjourneyClient

@@ -17,6 +17,7 @@ class Job:
     image_urls: list[str] = field(default_factory=list)
     user_id: str = ""
     enqueue_time: Optional[str] = None
+    parent_id: Optional[str] = None
 
     @property
     def is_completed(self) -> bool:

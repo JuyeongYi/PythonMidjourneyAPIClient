@@ -116,6 +116,104 @@ class MidjourneyClient:
 
         raise MidjourneyError(f"Job {job_id} timed out after {timeout}s")
 
+    def vary(
+        self,
+        job_id: str,
+        index: int,
+        strong: bool = True,
+        *,
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Create a variation of a generated image.
+
+        Args:
+            job_id: Parent job ID.
+            index: Image index in the grid (0-3).
+            strong: True for Strong variation, False for Subtle.
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+        """
+        job = self._api.submit_vary(job_id, index, strong=strong, mode=mode)
+        label = "Strong" if strong else "Subtle"
+        print(f"Vary ({label}) submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
+    def upscale(
+        self,
+        job_id: str,
+        index: int,
+        upscale_type: str = "v7_2x_subtle",
+        *,
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Upscale a generated image.
+
+        Args:
+            job_id: Parent job ID.
+            index: Image index in the grid (0-3).
+            upscale_type: 'v7_2x_subtle' or 'v7_2x_creative'.
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+        """
+        job = self._api.submit_upscale(
+            job_id, index, upscale_type=upscale_type, mode=mode,
+        )
+        print(f"Upscale ({upscale_type}) submitted: {job.id}")
+
+        if not wait:
+            return job
+
+        job = self._poll_job(job.id, poll_interval, timeout)
+        # Upscale produces a single image, not a 4-image grid
+        job.image_urls = [job.cdn_url(0)]
+        return job
+
+    def pan(
+        self,
+        job_id: str,
+        index: int,
+        direction: str = "up",
+        prompt: str = "",
+        *,
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Pan (extend) an image in a direction.
+
+        Args:
+            job_id: Parent job ID.
+            index: Image index in the grid (0-3).
+            direction: 'up', 'down', 'left', or 'right'.
+            prompt: Prompt text (including parameters) for the panned area.
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+        """
+        job = self._api.submit_pan(
+            job_id, index, direction=direction, prompt=prompt, mode=mode,
+        )
+        print(f"Pan ({direction}) submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
     def download_images(
         self,
         job: Job,

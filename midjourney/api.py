@@ -99,6 +99,94 @@ class MidjourneyAPI:
             user_id=user_id,
         )
 
+    # -- Post-processing methods ------------------------------------------
+
+    DIRECTION_MAP = {"up": 0, "right": 1, "down": 2, "left": 3}
+
+    def _submit_postprocess(
+        self,
+        job_id: str,
+        index: int,
+        task_type: str,
+        extra: dict,
+        mode: str = "fast",
+        private: bool = False,
+    ) -> Job:
+        """Submit a post-processing job (vary/upscale/pan)."""
+        user_id = self._auth.user_id
+
+        payload = {
+            "t": task_type,
+            "id": job_id,
+            "index": index,
+            "channelId": f"singleplayer_{user_id}",
+            "f": {"mode": mode, "private": private},
+            "roomId": None,
+            "metadata": {"isMobile": None, "imagePrompts": None},
+            **extra,
+        }
+
+        data = self._request("POST", "/api/submit-jobs", json=payload)
+
+        new_job_id = ""
+        prompt = ""
+        parent_id = job_id
+        if isinstance(data, dict):
+            success = data.get("success", [])
+            if success:
+                new_job_id = success[0].get("job_id", "")
+                prompt = success[0].get("prompt", "")
+                meta = success[0].get("meta", {})
+                parent_id = meta.get("parent_id", job_id)
+
+        return Job(
+            id=new_job_id,
+            prompt=prompt,
+            status="pending",
+            user_id=user_id,
+            parent_id=parent_id,
+        )
+
+    def submit_vary(
+        self, job_id: str, index: int, strong: bool = True,
+        mode: str = "fast", private: bool = False,
+    ) -> Job:
+        """Submit a Vary (Strong/Subtle) job."""
+        return self._submit_postprocess(
+            job_id, index, "vary",
+            extra={"strong": strong},
+            mode=mode, private=private,
+        )
+
+    def submit_upscale(
+        self, job_id: str, index: int, upscale_type: str = "v7_2x_subtle",
+        mode: str = "fast", private: bool = False,
+    ) -> Job:
+        """Submit an Upscale job."""
+        return self._submit_postprocess(
+            job_id, index, "upscale",
+            extra={"type": upscale_type},
+            mode=mode, private=private,
+        )
+
+    def submit_pan(
+        self, job_id: str, index: int, direction: str = "up",
+        prompt: str = "", mode: str = "fast", private: bool = False,
+    ) -> Job:
+        """Submit a Pan job."""
+        return self._submit_postprocess(
+            job_id, index, "pan",
+            extra={
+                "direction": self.DIRECTION_MAP[direction],
+                "newPrompt": prompt,
+                "fraction": 0.5,
+                "stitch": True,
+            },
+            mode=mode, private=private,
+        )
+
+    # -- Job status & listing ----------------------------------------------
+
     def get_job_status(self, job_id: str) -> Job | None:
         """Check if a job appears in the imagine list (= completed)."""
         user_id = self._auth.user_id

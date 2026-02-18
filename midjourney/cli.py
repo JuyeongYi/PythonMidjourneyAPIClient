@@ -72,6 +72,50 @@ def cmd_list(args: argparse.Namespace) -> None:
             print(f"[{status_icon}] {job.id}  {job.prompt[:60]}")
 
 
+def cmd_vary(args: argparse.Namespace) -> None:
+    """Handle the vary command."""
+    from midjourney.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env) as client:
+        job = client.vary(
+            args.job_id, args.index,
+            strong=(not args.subtle),
+            mode=args.mode,
+        )
+        if job.is_completed and args.output:
+            client.download_images(job, args.output, size=args.size)
+
+
+def cmd_upscale(args: argparse.Namespace) -> None:
+    """Handle the upscale command."""
+    from midjourney.client import MidjourneyClient
+
+    type_map = {"subtle": "v7_2x_subtle", "creative": "v7_2x_creative"}
+    with MidjourneyClient(env_path=args.env) as client:
+        job = client.upscale(
+            args.job_id, args.index,
+            upscale_type=type_map[args.type],
+            mode=args.mode,
+        )
+        if job.is_completed and args.output:
+            client.download_images(job, args.output, size=args.size)
+
+
+def cmd_pan(args: argparse.Namespace) -> None:
+    """Handle the pan command."""
+    from midjourney.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env) as client:
+        job = client.pan(
+            args.job_id, args.index,
+            direction=args.direction,
+            prompt=args.prompt or "",
+            mode=args.mode,
+        )
+        if job.is_completed and args.output:
+            client.download_images(job, args.output, size=args.size)
+
+
 def cmd_download(args: argparse.Namespace) -> None:
     """Handle the download command."""
     from midjourney.client import MidjourneyClient
@@ -114,6 +158,36 @@ def main() -> None:
     p_imagine.add_argument("-o", "--output", default="./images", help="Output directory")
     p_imagine.add_argument("--size", type=int, default=640, help="Image download size")
 
+    # vary
+    p_vary = sub.add_parser("vary", help="Create a variation of an image")
+    p_vary.add_argument("job_id", help="Parent job ID")
+    p_vary.add_argument("index", type=int, help="Image index (0-3)")
+    p_vary.add_argument("--subtle", action="store_true", help="Subtle variation (default: Strong)")
+    p_vary.add_argument("--mode", default="fast", choices=["fast", "relax", "turbo"])
+    p_vary.add_argument("-o", "--output", default="./images", help="Output directory")
+    p_vary.add_argument("--size", type=int, default=640, help="Image download size")
+
+    # upscale
+    p_upscale = sub.add_parser("upscale", help="Upscale an image")
+    p_upscale.add_argument("job_id", help="Parent job ID")
+    p_upscale.add_argument("index", type=int, help="Image index (0-3)")
+    p_upscale.add_argument("--type", default="subtle", choices=["subtle", "creative"],
+                           help="Upscale type (default: subtle)")
+    p_upscale.add_argument("--mode", default="fast", choices=["fast", "relax", "turbo"])
+    p_upscale.add_argument("-o", "--output", default="./images", help="Output directory")
+    p_upscale.add_argument("--size", type=int, default=640, help="Image download size")
+
+    # pan
+    p_pan = sub.add_parser("pan", help="Pan (extend) an image in a direction")
+    p_pan.add_argument("job_id", help="Parent job ID")
+    p_pan.add_argument("index", type=int, help="Image index (0-3)")
+    p_pan.add_argument("-d", "--direction", default="up",
+                       choices=["up", "down", "left", "right"], help="Pan direction")
+    p_pan.add_argument("-p", "--prompt", default="", help="Prompt for panned area")
+    p_pan.add_argument("--mode", default="fast", choices=["fast", "relax", "turbo"])
+    p_pan.add_argument("-o", "--output", default="./images", help="Output directory")
+    p_pan.add_argument("--size", type=int, default=640, help="Image download size")
+
     # list
     p_list = sub.add_parser("list", help="List recent jobs")
     p_list.add_argument("-n", "--limit", type=int, default=20, help="Max jobs to list")
@@ -129,6 +203,9 @@ def main() -> None:
     handlers = {
         "login": cmd_login,
         "imagine": cmd_imagine,
+        "vary": cmd_vary,
+        "upscale": cmd_upscale,
+        "pan": cmd_pan,
         "list": cmd_list,
         "download": cmd_download,
     }
