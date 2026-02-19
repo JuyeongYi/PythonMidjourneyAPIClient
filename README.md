@@ -8,15 +8,10 @@ Midjourney 웹사이트의 비공식 Python API 클라이언트. 프로그래밍
 
 ```bash
 uv sync
+playwright install chromium
 ```
 
-`uv sync`만으로 Playwright(브라우저 로그인)를 포함한 전체 의존성이 설치된다.
-
-배포용으로 Playwright 없이 설치하려면:
-
-```bash
-uv sync --no-group dev
-```
+`uv sync`만으로 전체 의존성이 설치된다. 이후 `playwright install chromium`으로 브라우저 로그인용 Chromium을 설치한다.
 
 설치 후 `midjourney` 명령어를 어디서든 사용할 수 있다.
 
@@ -109,7 +104,7 @@ midjourney download <job_id> -o ./images --size 1024
 ```python
 from midjourney_api import MidjourneyClient
 
-with MidjourneyClient() as client:
+with MidjourneyClient(print_log=True) as client:  # print_log=False가 기본값
     job = client.imagine(
         "a red apple",
         ar="16:9",
@@ -117,6 +112,25 @@ with MidjourneyClient() as client:
         chaos=10,
     )
     paths = client.download_images(job, "./images", size=1024)
+```
+
+HTTP 오류 디버그 로그를 보려면:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)  # api.py의 HTTP 오류 상세 출력
+```
+
+### 이미지 바이트로 받기 (디스크 없이)
+
+```python
+from io import BytesIO
+from PIL import Image
+
+with MidjourneyClient() as client:
+    job = client.imagine("landscape", ar="16:9")
+    data_list = client.download_images_bytes(job, size=1024)
+    images = [Image.open(BytesIO(data)).convert("RGB") for data in data_list]
 ```
 
 ### 이미지 참조 — client를 통한 자동 업로드
@@ -322,4 +336,5 @@ VisibilityMode.PUBLIC   # --public
 - Python 3.11+
 - `curl_cffi` — HTTP 클라이언트 (Chrome TLS 핑거프린트로 Cloudflare 우회)
 - `python-dotenv` — `.env` 파일 로드
-- `playwright` — 브라우저 기반 로그인 (dev 그룹, `uv sync` 시 자동 포함)
+- `httpx` — Firebase 토큰 갱신
+- `playwright` — 브라우저 기반 로그인
