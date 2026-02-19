@@ -28,9 +28,15 @@ class MidjourneyClient:
         self,
         refresh_token: str | None = None,
         env_path: str = ".env",
+        print_log: bool = False,
     ):
         self._auth = MidjourneyAuth(refresh_token=refresh_token, env_path=env_path)
         self._api = MidjourneyAPI(self._auth)
+        self._print_log = print_log
+
+    def _log(self, msg: str) -> None:
+        if self._print_log:
+            print(msg)
 
     def close(self) -> None:
         self._api.close()
@@ -54,9 +60,9 @@ class MidjourneyClient:
     def _upload_if_local(self, value: str) -> str:
         """If value is a local file path, upload and return CDN URL."""
         if os.path.exists(value):
-            print(f"  Uploading {value}...")
+            self._log(f"  Uploading {value}...")
             cdn_url = self._api.upload_image(value)
-            print(f"  → {cdn_url}")
+            self._log(f"  → {cdn_url}")
             return cdn_url
         return value
 
@@ -126,8 +132,8 @@ class MidjourneyClient:
         p.validate()
 
         job = self._api.submit_job(p, mode=mode, metadata=metadata or None)
-        print(f"Job submitted: {job.id}")
-        print(f"Prompt: {p.build_prompt()}")
+        self._log(f"Job submitted: {job.id}")
+        self._log(f"Prompt: {p.build_prompt()}")
 
         if not wait:
             return job
@@ -139,7 +145,7 @@ class MidjourneyClient:
     ) -> Job:
         """Poll /api/imagine until the job appears (= completed)."""
         start = time.time()
-        print("  Waiting for completion...")
+        self._log("  Waiting for completion...")
 
         while time.time() - start < timeout:
             job = self._api.get_job_status(job_id)
@@ -149,7 +155,7 @@ class MidjourneyClient:
                 job.progress = 100
                 if job.id:
                     job.image_urls = [job.cdn_url(i) for i in range(4)]
-                print("  Completed!")
+                self._log("  Completed!")
                 return job
 
             time.sleep(interval)
@@ -170,7 +176,7 @@ class MidjourneyClient:
         """Create a variation of a generated image."""
         job = self._api.submit_vary(job_id, index, strong=strong, mode=mode)
         label = "Strong" if strong else "Subtle"
-        print(f"Vary ({label}) submitted: {job.id}")
+        self._log(f"Vary ({label}) submitted: {job.id}")
 
         if not wait:
             return job
@@ -191,7 +197,7 @@ class MidjourneyClient:
         job = self._api.submit_upscale(
             job_id, index, upscale_type=upscale_type, mode=mode,
         )
-        print(f"Upscale ({upscale_type}) submitted: {job.id}")
+        self._log(f"Upscale ({upscale_type}) submitted: {job.id}")
 
         if not wait:
             return job
@@ -216,7 +222,7 @@ class MidjourneyClient:
         job = self._api.submit_pan(
             job_id, index, direction=direction, prompt=prompt, mode=mode,
         )
-        print(f"Pan ({direction}) submitted: {job.id}")
+        self._log(f"Pan ({direction}) submitted: {job.id}")
 
         if not wait:
             return job
@@ -242,14 +248,14 @@ class MidjourneyClient:
             url = job.cdn_url(idx, size)
             file_path = out / f"{job.id}_{idx}.webp"
 
-            print(f"Downloading image {idx}...")
+            self._log(f"Downloading image {idx}...")
             resp = curl_requests.get(url, timeout=60, impersonate="chrome")
             resp.raise_for_status()
             with open(file_path, "wb") as f:
                 f.write(resp.content)
 
             paths.append(file_path)
-            print(f"  Saved: {file_path}")
+            self._log(f"  Saved: {file_path}")
 
         return paths
 

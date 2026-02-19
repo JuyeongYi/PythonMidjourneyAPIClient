@@ -152,7 +152,7 @@ class MidjourneyAPI:
 
     # -- Post-processing methods ------------------------------------------
 
-    DIRECTION_MAP = {"up": 0, "right": 1, "down": 2, "left": 3}
+    DIRECTION_MAP = {"up": 2, "right": 1, "down": 0, "left": 3}
 
     def _submit_postprocess(
         self,
