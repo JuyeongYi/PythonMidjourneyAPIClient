@@ -41,10 +41,10 @@ class MidjourneyClient:
     def close(self) -> None:
         self._api.close()
 
-    def __enter__(self):
+    def __enter__(self) -> MidjourneyClient:
         return self
 
-    def __exit__(self, *_):
+    def __exit__(self, *_) -> None:
         self.close()
 
     @property

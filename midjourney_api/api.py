@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json as json_mod
+import logging
 import mimetypes
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,8 @@ from midjourney_api.params.base import BaseParams
 
 BASE_URL = "https://www.midjourney.com"
 
+logger = logging.getLogger(__name__)
+
 
 class MidjourneyAPI:
     """Low-level HTTP client for the Midjourney REST API.
@@ -24,6 +27,9 @@ class MidjourneyAPI:
     Uses curl_cffi to impersonate Chrome's TLS fingerprint,
     bypassing Cloudflare bot protection.
     """
+
+    CDN_BASE = "https://cdn.midjourney.com/u"
+    DIRECTION_MAP = {"up": 2, "right": 1, "down": 0, "left": 3}
 
     def __init__(self, auth: MidjourneyAuth):
         self._auth = auth
@@ -58,14 +64,12 @@ class MidjourneyAPI:
         )
         if resp.status_code >= 400:
             cookie_hdr = self._auth.cookie_header()
-            print(f"[DEBUG] {method} {path} → {resp.status_code}")
-            print(f"[DEBUG] Cookie: {cookie_hdr[:80]}...({len(cookie_hdr)} chars)")
-            print(f"[DEBUG] User ID: {self._auth.user_id}")
-            print(f"[DEBUG] Response: {resp.text[:500]}")
+            logger.debug("%s %s → %s", method, path, resp.status_code)
+            logger.debug("Cookie: %s...(%d chars)", cookie_hdr[:80], len(cookie_hdr))
+            logger.debug("User ID: %s", self._auth.user_id)
+            logger.debug("Response: %s", resp.text[:500])
             resp.raise_for_status()
         return resp.json() if resp.content else None
-
-    CDN_BASE = "https://cdn.midjourney.com/u"
 
     def upload_image(self, file_path: str) -> str:
         """Upload a local image file and return its CDN URL.
@@ -98,8 +102,8 @@ class MidjourneyAPI:
             timeout=60,
         )
         if resp.status_code >= 400:
-            print(f"[DEBUG] POST /api/storage-upload-file → {resp.status_code}")
-            print(f"[DEBUG] Response: {resp.text[:500]}")
+            logger.debug("POST /api/storage-upload-file → %s", resp.status_code)
+            logger.debug("Response: %s", resp.text[:500])
             resp.raise_for_status()
 
         data = resp.json()
@@ -152,8 +156,6 @@ class MidjourneyAPI:
 
     # -- Post-processing methods ------------------------------------------
 
-    DIRECTION_MAP = {"up": 2, "right": 1, "down": 0, "left": 3}
-
     def _submit_postprocess(
         self,
         job_id: str,
@@ -199,8 +201,12 @@ class MidjourneyAPI:
         )
 
     def submit_vary(
-        self, job_id: str, index: int, strong: bool = True,
-        mode: str = "fast", private: bool = False,
+        self,
+        job_id: str,
+        index: int,
+        strong: bool = True,
+        mode: str = "fast",
+        private: bool = False,
     ) -> Job:
         """Submit a Vary (Strong/Subtle) job."""
         return self._submit_postprocess(
@@ -210,8 +216,12 @@ class MidjourneyAPI:
         )
 
     def submit_upscale(
-        self, job_id: str, index: int, upscale_type: str = "v7_2x_subtle",
-        mode: str = "fast", private: bool = False,
+        self,
+        job_id: str,
+        index: int,
+        upscale_type: str = "v7_2x_subtle",
+        mode: str = "fast",
+        private: bool = False,
     ) -> Job:
         """Submit an Upscale job."""
         return self._submit_postprocess(
@@ -221,8 +231,13 @@ class MidjourneyAPI:
         )
 
     def submit_pan(
-        self, job_id: str, index: int, direction: str = "up",
-        prompt: str = "", mode: str = "fast", private: bool = False,
+        self,
+        job_id: str,
+        index: int,
+        direction: str = "up",
+        prompt: str = "",
+        mode: str = "fast",
+        private: bool = False,
     ) -> Job:
         """Submit a Pan job."""
         return self._submit_postprocess(
