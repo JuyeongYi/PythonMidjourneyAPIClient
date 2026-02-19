@@ -11,10 +11,8 @@ dependencies = [
     "httpx>=0.28",
     "curl_cffi>=0.7",
     "python-dotenv>=1.0",
+    "playwright>=1.40",
 ]
-
-[project.optional-dependencies]
-login = ["playwright>=1.40"]
 
 [project.scripts]
 midjourney = "midjourney_api.cli:main"
@@ -23,7 +21,7 @@ midjourney = "midjourney_api.cli:main"
 default-groups = ["dev"]
 
 [dependency-groups]
-dev = ["midjourney-api[login]"]
+dev = []
 
 [tool.setuptools.packages.find]
 include = ["midjourney_api*"]
