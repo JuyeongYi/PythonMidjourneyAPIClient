@@ -253,6 +253,26 @@ class MidjourneyClient:
 
         return paths
 
+    def download_images_bytes(
+        self,
+        job: Job,
+        size: int = 640,
+        indices: list[int] | None = None,
+    ) -> list[bytes]:
+        """Download generated images as raw bytes (no disk I/O)."""
+        if indices is None:
+            count = len(job.image_urls) if job.image_urls else 4
+            indices = list(range(count))
+
+        result: list[bytes] = []
+        for idx in indices:
+            url = job.cdn_url(idx, size)
+            resp = curl_requests.get(url, timeout=60, impersonate="chrome")
+            resp.raise_for_status()
+            result.append(resp.content)
+
+        return result
+
     def list_jobs(self, limit: int = 50) -> list[Job]:
         """List recent image generation jobs."""
         jobs = self._api.get_imagine_list(page_size=limit)
