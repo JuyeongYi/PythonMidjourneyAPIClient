@@ -10,7 +10,7 @@ from curl_cffi import requests as curl_requests
 
 from midjourney_api.api import MidjourneyAPI
 from midjourney_api.auth import MidjourneyAuth
-from midjourney_api.exceptions import JobFailedError, MidjourneyError
+from midjourney_api.exceptions import MidjourneyError
 from midjourney_api.models import Job, UserSettings
 from midjourney_api.params import create_params
 
@@ -44,7 +44,7 @@ class MidjourneyClient:
     def __enter__(self):
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, *_):
         self.close()
 
     @property
