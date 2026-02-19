@@ -234,7 +234,8 @@ class MidjourneyClient:
         out.mkdir(parents=True, exist_ok=True)
 
         if indices is None:
-            indices = list(range(4))
+            count = len(job.image_urls) if job.image_urls else 4
+            indices = list(range(count))
 
         paths: list[Path] = []
         for idx in indices:
