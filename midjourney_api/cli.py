@@ -189,7 +189,9 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
     with MidjourneyClient(env_path=args.env, print_log=True) as client:
         job = client.extend_video(
             args.job_id,
+            args.index,
             motion=args.motion,
+            loop=args.loop,
             batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
@@ -326,10 +328,13 @@ def main() -> None:
     p_afi.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
 
     # extend-video
-    p_ext = sub.add_parser("extend-video", help="Extend an existing video job")
+    p_ext = sub.add_parser("extend-video", help="Extend an existing video job (or make it loop)")
     p_ext.add_argument("job_id", help="Source video job ID")
+    p_ext.add_argument("index", type=int, nargs="?", default=0, help="Batch variant index (default: 0)")
+    p_ext.add_argument("--loop", action="store_true",
+                       help="Create a seamless loop instead of extending")
     p_ext.add_argument("--motion", choices=["low", "high"], default=None,
-                       help="Motion intensity (low or high)")
+                       help="Motion intensity (low or high, non-loop only)")
     p_ext.add_argument("--batch-size", type=int, default=1, dest="batch_size",
                        help="Number of video variants to generate (default: 1)")
     p_ext.add_argument("--resolution", default="480", help="Video resolution (default: 480)")

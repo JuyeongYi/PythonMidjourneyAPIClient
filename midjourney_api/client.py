@@ -339,8 +339,10 @@ class MidjourneyClient:
     def extend_video(
         self,
         job_id: str,
+        index: int = 0,
         *,
         motion: str | None = None,
+        loop: bool = False,
         batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
@@ -348,11 +350,13 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Extend a completed video job.
+        """Extend a completed video job, or create a seamless loop.
 
         Args:
             job_id: Completed video job ID to extend.
-            motion: Motion intensity ("low" or "high").
+            index: Batch variant index to extend (default 0).
+            motion: Motion intensity ("low" or "high"). Only for non-loop extend.
+            loop: If True, create a seamless loop (vid_1.1_i2v_start_end + --end loop).
             batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
@@ -364,8 +368,8 @@ class MidjourneyClient:
             Completed Job with video_url()/gif_url() available.
         """
         job = self._api.submit_extend_video(
-            job_id, motion=motion, batch_size=batch_size,
-            resolution=resolution, mode=mode,
+            job_id, index=index, motion=motion, loop=loop,
+            batch_size=batch_size, resolution=resolution, mode=mode,
         )
         self._log(f"Extend video submitted: {job.id}")
 
