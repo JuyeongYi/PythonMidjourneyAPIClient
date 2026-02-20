@@ -320,6 +320,7 @@ class MidjourneyAPI:
                     status="completed",
                     progress=100,
                     user_id=item.get("user_id", ""),
+                    event_type=item.get("event_type"),
                 )
         return None
 
@@ -371,6 +372,7 @@ class MidjourneyAPI:
                 progress=item.get("percentage_complete", 0),
                 user_id=item.get("user_id", ""),
                 enqueue_time=item.get("enqueue_time"),
+                event_type=item.get("event_type"),
             )
             if job.is_completed and job.id:
                 job.image_urls = [job.cdn_url(i) for i in range(4)]
