@@ -341,6 +341,7 @@ class MidjourneyClient:
         self,
         job_id: str,
         *,
+        batch_size: int | None = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -351,6 +352,7 @@ class MidjourneyClient:
 
         Args:
             job_id: Completed video job ID.
+            batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
@@ -361,7 +363,7 @@ class MidjourneyClient:
             Completed Job with video_url()/gif_url() available.
         """
         job = self._api.submit_loop_from_job(
-            job_id, resolution=resolution, mode=mode,
+            job_id, batch_size=batch_size, resolution=resolution, mode=mode,
         )
         self._log(f"Loop video submitted: {job.id}")
 
@@ -374,6 +376,7 @@ class MidjourneyClient:
         job_id: str,
         *,
         motion: str | None = None,
+        batch_size: int | None = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -385,6 +388,7 @@ class MidjourneyClient:
         Args:
             job_id: Completed video job ID to extend.
             motion: Motion intensity ("low" or "high").
+            batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
@@ -395,7 +399,8 @@ class MidjourneyClient:
             Completed Job with video_url()/gif_url() available.
         """
         job = self._api.submit_extend_video(
-            job_id, motion=motion, resolution=resolution, mode=mode,
+            job_id, motion=motion, batch_size=batch_size,
+            resolution=resolution, mode=mode,
         )
         self._log(f"Extend video submitted: {job.id}")
 

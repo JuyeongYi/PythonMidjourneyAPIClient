@@ -461,6 +461,7 @@ class MidjourneyAPI:
     def submit_loop_from_job(
         self,
         job_id: str,
+        batch_size: int | None = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -471,12 +472,17 @@ class MidjourneyAPI:
 
         Args:
             job_id: Completed video job ID to loop.
+            batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
-        full_prompt = "--bs 1 --video 1 --end loop"
+        parts = []
+        if batch_size is not None:
+            parts.append(f"--bs {batch_size}")
+        parts.extend(["--video 1", "--end loop"])
+        full_prompt = " ".join(parts)
         payload = self._video_payload(
             video_type=f"vid_1.1_i2v_start_end_{resolution}",
             new_prompt=full_prompt,
@@ -499,6 +505,7 @@ class MidjourneyAPI:
         self,
         job_id: str,
         motion: str | None = None,
+        batch_size: int | None = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -508,12 +515,15 @@ class MidjourneyAPI:
         Args:
             job_id: Completed video job ID to extend.
             motion: Motion intensity ("low" or "high").
+            batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
-        parts = ["--bs 1"]
+        parts = []
+        if batch_size is not None:
+            parts.append(f"--bs {batch_size}")
         if motion:
             parts.append(f"--motion {motion}")
         parts.append("--video 1")
