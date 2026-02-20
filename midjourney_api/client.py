@@ -243,6 +243,210 @@ class MidjourneyClient:
             return job
         return self._poll_job(job.id, poll_interval, timeout)
 
+    def animate(
+        self,
+        job_id: str,
+        index: int,
+        *,
+        prompt: str = "",
+        resolution: str = "480",
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Generate an animation from a completed imagine job.
+
+        Args:
+            job_id: Completed imagine job ID.
+            index: Image index within the grid (0-3).
+            prompt: Optional additional prompt text.
+            resolution: Video resolution ('480').
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+
+        Returns:
+            Completed Job with video_url()/gif_url() available.
+        """
+        job = self._api.submit_animate(
+            job_id, index, prompt=prompt, resolution=resolution, mode=mode,
+        )
+        self._log(f"Animate submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
+    def animate_from_image(
+        self,
+        start_image: str,
+        end_image: str | None = None,
+        *,
+        motion: str | None = None,
+        prompt: str = "",
+        resolution: str = "480",
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Generate an animation from image files.
+
+        Modes:
+        - Start only:   end_image=None
+        - Start+end:    end_image=<local file or URL>
+        - Start+loop:   end_image="loop", motion="low"|"high"
+
+        Args:
+            start_image: Local file or URL for the start frame (auto-uploaded if local).
+            end_image: Local file/URL for end frame, "loop" for loop mode, or None.
+            motion: Motion intensity ("low" or "high"). Required when end_image="loop".
+            prompt: Optional text prompt.
+            resolution: Video resolution ('480').
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+
+        Returns:
+            Completed Job with video_url()/gif_url() available.
+        """
+        start_url = self._upload_if_local(start_image)
+        end_url: str | None
+        if end_image is None or end_image == "loop":
+            end_url = end_image  # None or "loop" — not a file path
+        else:
+            end_url = self._upload_if_local(end_image)
+
+        job = self._api.submit_animate_from_image(
+            start_url, end_url=end_url, motion=motion,
+            prompt=prompt, resolution=resolution, mode=mode,
+        )
+        self._log(f"Animate from image submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
+    def loop_video(
+        self,
+        job_id: str,
+        *,
+        resolution: str = "480",
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Create a looping version of an existing video job.
+
+        Args:
+            job_id: Completed video job ID.
+            resolution: Video resolution ('480').
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+
+        Returns:
+            Completed Job with video_url()/gif_url() available.
+        """
+        job = self._api.submit_loop_from_job(
+            job_id, resolution=resolution, mode=mode,
+        )
+        self._log(f"Loop video submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
+    def extend_video(
+        self,
+        job_id: str,
+        *,
+        motion: str | None = None,
+        resolution: str = "480",
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+    ) -> Job:
+        """Extend a completed video job.
+
+        Args:
+            job_id: Completed video job ID to extend.
+            motion: Motion intensity ("low" or "high").
+            resolution: Video resolution ('480').
+            wait: If True, poll until the job completes.
+            poll_interval: Seconds between status polls.
+            timeout: Maximum seconds to wait.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+
+        Returns:
+            Completed Job with video_url()/gif_url() available.
+        """
+        job = self._api.submit_extend_video(
+            job_id, motion=motion, resolution=resolution, mode=mode,
+        )
+        self._log(f"Extend video submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
+    def download_video(
+        self,
+        job: Job,
+        output_dir: str = "./videos",
+        size: int | None = None,
+    ) -> Path:
+        """Download a completed animation video to disk.
+
+        Args:
+            job: Completed video Job.
+            output_dir: Directory to save the video.
+            size: Resolution (e.g. 1080 for social). None = raw original.
+
+        Returns:
+            Path to the saved .mp4 file.
+        """
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+
+        url = job.video_url(size=size)
+        suffix = f"_{size}" if size else ""
+        file_path = out / f"{job.id}{suffix}.mp4"
+
+        self._log("Downloading video...")
+        resp = curl_requests.get(url, timeout=120, impersonate="chrome")
+        resp.raise_for_status()
+        with open(file_path, "wb") as f:
+            f.write(resp.content)
+
+        self._log(f"  Saved: {file_path}")
+        return file_path
+
+    def download_video_bytes(
+        self,
+        job: Job,
+        size: int | None = None,
+    ) -> bytes:
+        """Download a completed animation video as raw bytes (no disk I/O).
+
+        Args:
+            job: Completed video Job.
+            size: Resolution (e.g. 1080 for social). None = raw original.
+
+        Returns:
+            Raw MP4 bytes.
+        """
+        url = job.video_url(size=size)
+        resp = curl_requests.get(url, timeout=120, impersonate="chrome")
+        resp.raise_for_status()
+        return resp.content
+
     def download_images(
         self,
         job: Job,
