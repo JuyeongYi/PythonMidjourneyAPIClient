@@ -26,7 +26,7 @@ def cmd_login(args: argparse.Namespace) -> None:
     """Handle the login command."""
     from midjourney_api.client import MidjourneyClient
 
-    client = MidjourneyClient(env_path=args.env)
+    client = MidjourneyClient(env_path=args.env, print_log=args.verbose)
     client.login(force=args.force)
     client.close()
 
@@ -75,7 +75,7 @@ def cmd_imagine(args: argparse.Namespace) -> None:
     if args.visibility:
         params["visibility"] = args.visibility
 
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.imagine(
             args.prompt,
             image=args.image,
@@ -91,7 +91,7 @@ def cmd_list(args: argparse.Namespace) -> None:
     """Handle the list command."""
     from midjourney_api.client import MidjourneyClient
 
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         jobs = client.list_jobs(limit=args.limit)
         for job in jobs:
             status_icon = {"completed": "+", "failed": "x", "running": "~"}.get(
@@ -104,7 +104,7 @@ def cmd_vary(args: argparse.Namespace) -> None:
     """Handle the vary command."""
     from midjourney_api.client import MidjourneyClient
 
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.vary(
             args.job_id, args.index,
             strong=(not args.subtle),
@@ -119,7 +119,7 @@ def cmd_upscale(args: argparse.Namespace) -> None:
     from midjourney_api.client import MidjourneyClient
 
     type_map = {"subtle": UpscaleType.SUBTLE, "creative": UpscaleType.CREATIVE}
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.upscale(
             args.job_id, args.index,
             upscale_type=type_map[args.type],
@@ -133,7 +133,7 @@ def cmd_pan(args: argparse.Namespace) -> None:
     """Handle the pan command."""
     from midjourney_api.client import MidjourneyClient
 
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.pan(
             args.job_id, args.index,
             direction=args.direction,
@@ -148,7 +148,7 @@ def cmd_animate(args: argparse.Namespace) -> None:
     """Handle the animate command (i2v from imagine)."""
     from midjourney_api.client import MidjourneyClient
 
-    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.animate(
             args.job_id, args.index,
             prompt=args.prompt,
@@ -166,7 +166,7 @@ def cmd_animate_from_image(args: argparse.Namespace) -> None:
     """Handle the animate-from-image command (start / start+end / start+loop)."""
     from midjourney_api.client import MidjourneyClient
 
-    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.animate_from_image(
             args.start_image,
             args.end_image,
@@ -186,7 +186,7 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
     """Handle the extend-video command."""
     from midjourney_api.client import MidjourneyClient
 
-    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.extend_video(
             args.job_id,
             args.index,
@@ -207,7 +207,7 @@ def cmd_download_video(args: argparse.Namespace) -> None:
     from midjourney_api.client import MidjourneyClient
     from midjourney_api.models import Job
 
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = Job(id=args.job_id, prompt="", status="completed",
                   user_id=client.user_id, event_type="video_diffusion")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
@@ -220,7 +220,7 @@ def cmd_download(args: argparse.Namespace) -> None:
     from midjourney_api.client import MidjourneyClient
     from midjourney_api.models import Job
 
-    with MidjourneyClient(env_path=args.env) as client:
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = Job(id=args.job_id, prompt="", status="completed", user_id=client.user_id)
         client.download_images(job, args.output, size=args.size)
 
@@ -231,6 +231,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--env", default=".env", help="Path to .env file")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Print progress logs")
     sub = parser.add_subparsers(dest="command", required=True)
 
     # login
