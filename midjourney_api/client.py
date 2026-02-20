@@ -10,6 +10,7 @@ from curl_cffi import requests as curl_requests
 
 from midjourney_api.api import MidjourneyAPI
 from midjourney_api.auth import MidjourneyAuth
+from midjourney_api.const import UpscaleType
 from midjourney_api.exceptions import MidjourneyError
 from midjourney_api.models import Job, UserSettings
 from midjourney_api.params import create_params
@@ -201,7 +202,7 @@ class MidjourneyClient:
         self,
         job_id: str,
         index: int,
-        upscale_type: str = "v7_2x_subtle",
+        upscale_type: str = UpscaleType.SUBTLE,
         *,
         wait: bool = True,
         poll_interval: float = 5,

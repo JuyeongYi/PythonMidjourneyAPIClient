@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 
+from midjourney_api.const import UpscaleType
 from midjourney_api.params.types import (
     AspectRatio,
     Chaos,
@@ -117,7 +118,7 @@ def cmd_upscale(args: argparse.Namespace) -> None:
     """Handle the upscale command."""
     from midjourney_api.client import MidjourneyClient
 
-    type_map = {"subtle": "v7_2x_subtle", "creative": "v7_2x_creative"}
+    type_map = {"subtle": UpscaleType.SUBTLE, "creative": UpscaleType.CREATIVE}
     with MidjourneyClient(env_path=args.env) as client:
         job = client.upscale(
             args.job_id, args.index,

@@ -15,14 +15,12 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv, set_key
 
-from midjourney_api.exceptions import AuthenticationError
-
-FIREBASE_API_KEY = "AIzaSyAjizp68NsH3JGUS0EyLXsChW4fN0A92tM"
-FIREBASE_TOKEN_URL = (
-    f"https://securetoken.googleapis.com/v1/token?key={FIREBASE_API_KEY}"
+from midjourney_api.const import (
+    FIREBASE_TOKEN_URL,
+    ID_COOKIE_NAME,
+    REFRESH_COOKIE_NAME,
 )
-REFRESH_COOKIE_NAME = "__Host-Midjourney.AuthUserTokenV3_r"
-ID_COOKIE_NAME = "__Host-Midjourney.AuthUserTokenV3_i"
+from midjourney_api.exceptions import AuthenticationError
 
 
 class MidjourneyAuth:

@@ -13,11 +13,10 @@ from curl_cffi import requests as curl_requests
 from curl_cffi.curl import CurlMime
 
 from midjourney_api.auth import MidjourneyAuth
+from midjourney_api.const import BASE_URL, CDN_BASE, PanDirection, UpscaleType, VideoResolution
 from midjourney_api.exceptions import MidjourneyError
 from midjourney_api.models import Job, UserSettings
 from midjourney_api.params.base import BaseParams
-
-BASE_URL = "https://www.midjourney.com"
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +27,6 @@ class MidjourneyAPI:
     Uses curl_cffi to impersonate Chrome's TLS fingerprint,
     bypassing Cloudflare bot protection.
     """
-
-    CDN_BASE = "https://cdn.midjourney.com/u"
-    DIRECTION_MAP = {"up": 2, "right": 1, "down": 0, "left": 3}
 
     def __init__(
         self,
@@ -149,7 +145,7 @@ class MidjourneyAPI:
 
         data = resp.json()
         bucket_pathname = data["bucketPathname"]
-        return f"{self.CDN_BASE}/{bucket_pathname}"
+        return f"{CDN_BASE}/{bucket_pathname}"
 
     def submit_job(
         self,
@@ -260,7 +256,7 @@ class MidjourneyAPI:
         self,
         job_id: str,
         index: int,
-        upscale_type: str = "v7_2x_subtle",
+        upscale_type: str = UpscaleType.SUBTLE,
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
@@ -284,7 +280,7 @@ class MidjourneyAPI:
         return self._submit_postprocess(
             job_id, index, "pan",
             extra={
-                "direction": self.DIRECTION_MAP[direction],
+                "direction": PanDirection[direction.upper()].value,
                 "newPrompt": prompt,
                 "fraction": 0.5,
                 "stitch": True,
@@ -294,14 +290,12 @@ class MidjourneyAPI:
 
     # -- Animation methods ------------------------------------------------
 
-    _VALID_VIDEO_RESOLUTIONS = frozenset({"480", "720"})
-
     def _check_resolution(self, resolution: str) -> None:
-        if resolution not in self._VALID_VIDEO_RESOLUTIONS:
-            from midjourney_api.exceptions import MidjourneyError
+        valid = {r.value for r in VideoResolution}
+        if resolution not in valid:
             raise MidjourneyError(
                 f"Unsupported video resolution '{resolution}'. "
-                f"Must be one of: {sorted(self._VALID_VIDEO_RESOLUTIONS)}"
+                f"Must be one of: {sorted(valid)}"
             )
 
     def _video_payload(

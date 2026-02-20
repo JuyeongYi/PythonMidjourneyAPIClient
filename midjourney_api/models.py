@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+from midjourney_api.const import CDN_VIDEO_BASE
+
 
 @dataclass
 class Job:
@@ -41,12 +43,12 @@ class Job:
             size: Resolution (e.g. 1080 for social). None = raw original.
         """
         if size:
-            return f"https://cdn.midjourney.com/video/{self.id}/{index}_{size}_N.mp4"
-        return f"https://cdn.midjourney.com/video/{self.id}/{index}.mp4"
+            return f"{CDN_VIDEO_BASE}/{self.id}/{index}_{size}_N.mp4"
+        return f"{CDN_VIDEO_BASE}/{self.id}/{index}.mp4"
 
     def gif_url(self, index: int = 0) -> str:
         """Build CDN URL for a GIF version of a video job."""
-        return f"https://cdn.midjourney.com/video/{self.id}/{index}_N.gif"
+        return f"{CDN_VIDEO_BASE}/{self.id}/{index}_N.gif"
 
     def cdn_url(self, index: int = 0, size: int = 640) -> str:
         """Build CDN URL for a specific image variant.
