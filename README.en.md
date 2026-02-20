@@ -84,6 +84,27 @@ midjourney pan <job_id> 0 -d left -p "new prompt for panned area"
 
 > **Upscale is terminal** — you cannot pan/vary from an upscaled result. Always branch from the original grid job.
 
+### Animation (Video Generation)
+
+```bash
+# Generate animation from an imagine result (Image-to-Video)
+midjourney animate <job_id> 0
+
+# Generate from image files
+midjourney animate-from-image ./start.png                       # start only
+midjourney animate-from-image ./start.png ./end.png             # start+end
+midjourney animate-from-image ./start.png loop --motion high    # start+loop
+
+# Post-process existing video jobs
+midjourney loop-video <job_id>                      # create looping version
+midjourney extend-video <job_id> --motion low       # extend (motion: low/high)
+midjourney extend-video <job_id> --motion high
+
+# Download video
+midjourney download-video <job_id>                  # raw (.mp4)
+midjourney download-video <job_id> --size 1080      # social resolution
+```
+
 ### List Recent Jobs
 
 ```bash
@@ -131,6 +152,31 @@ with MidjourneyClient() as client:
     job = client.imagine("landscape", ar="16:9")
     data_list = client.download_images_bytes(job, size=1024)
     images = [Image.open(BytesIO(data)).convert("RGB") for data in data_list]
+```
+
+### Animation Python API
+
+```python
+with MidjourneyClient(print_log=True) as client:
+    # 1. Animate from imagine result (Image-to-Video)
+    imagine_job = client.imagine("a black cat in moonlight", ar="1:1")
+    video_job = client.animate(imagine_job.id, index=0)
+    path = client.download_video(video_job, "./videos")
+    print(video_job.video_url())            # raw mp4
+    print(video_job.video_url(size=1080))   # social
+    print(video_job.gif_url())              # gif
+
+    # 2. Animate from image files (3 modes)
+    job_start_only = client.animate_from_image("./start.png")
+    job_start_end  = client.animate_from_image("./start.png", "./end.png")
+    job_loop       = client.animate_from_image("./start.png", "loop", motion="high")
+
+    # 3. Post-process existing video jobs
+    looped   = client.loop_video(video_job.id)
+    extended = client.extend_video(video_job.id, motion="low")
+
+    # 4. Get video as bytes (no disk I/O)
+    raw_bytes = client.download_video_bytes(video_job)
 ```
 
 ### Image References — Auto-upload via Client

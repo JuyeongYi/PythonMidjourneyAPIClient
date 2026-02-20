@@ -17,17 +17,24 @@ uv run midjourney imagine "prompt" --ar 16:9         # Generate images
 uv run midjourney imagine "prompt" --image ./ref.png # Image prompt (upload)
 uv run midjourney imagine "prompt" --sref ./s.png    # Style reference (upload)
 uv run midjourney imagine "prompt" --oref ./c.png    # Object reference (upload)
-uv run midjourney vary <job_id> <index> [--subtle]   # Vary (Strong/Subtle)
-uv run midjourney upscale <job_id> <index> [--type]  # Upscale (subtle/creative)
-uv run midjourney pan <job_id> <index> -d up         # Pan (up/down/left/right)
-uv run midjourney list                               # List recent jobs
-uv run midjourney download <job_id>                  # Download images
+uv run midjourney vary <job_id> <index> [--subtle]                     # Vary (Strong/Subtle)
+uv run midjourney upscale <job_id> <index> [--type]                    # Upscale (subtle/creative)
+uv run midjourney pan <job_id> <index> -d up                           # Pan (up/down/left/right)
+uv run midjourney animate <job_id> <index>                             # Animate from imagine grid
+uv run midjourney animate-from-image ./start.png                       # Animate: start only
+uv run midjourney animate-from-image ./start.png ./end.png             # Animate: start+end
+uv run midjourney animate-from-image ./start.png loop --motion high    # Animate: start+loop
+uv run midjourney loop-video <job_id>                                  # Loop existing video
+uv run midjourney extend-video <job_id> --motion low                   # Extend video
+uv run midjourney download-video <job_id> [--size 1080]                # Download video
+uv run midjourney list                                                 # List recent jobs
+uv run midjourney download <job_id>                                    # Download images
 ```
 
 ## Architecture
 
-- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan, download
-- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`)
+- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan, animate, animate_from_image, loop_video, extend_video, download
+- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`, `submit_animate`, `submit_animate_from_image`, `submit_loop_from_job`, `submit_extend_video`)
 - `midjourney_api/auth.py` — Firebase Auth / token refresh / Playwright browser login
 - `midjourney_api/models.py` — Dataclass models (`Job`, `UserSettings`)
 - `midjourney_api/params/types.py` — Custom types (`MJParam`, `_RangeInt`, `_Flag`, `_ModeEnum`, `SpeedMode`, `VisibilityMode`)
@@ -56,6 +63,12 @@ uv run midjourney download <job_id>                  # Download images
 - Download: based on `job.image_urls` length (grid=4 images, upscale=1 image)
 - Output path: `{output_dir}/{job_id}_{index}.webp`
 - `download_images_bytes(job, size, indices)` — returns `list[bytes]` without disk I/O (for PIL/BytesIO processing)
+- Animation video types: `vid_1.1_i2v_{res}` (i2v), `vid_1.1_i2v_start_end_{res}` (start/end/loop), `vid_1.1_i2v_extend_{res}` (extend)
+- Video CDN: `cdn.midjourney.com/video/{job_id}/0.mp4` (raw), `0_{size}_N.mp4` (social), `0_N.gif` (gif)
+- `animate(job_id, index)` — i2v from imagine grid; `animate_from_image(start, end, motion)` — 3 modes (start-only / start+end / start+loop)
+- `loop_video(job_id)` — loop from existing video job; `extend_video(job_id, motion)` — extend with motion low/high
+- `download_video(job, output_dir, size)` — saves .mp4; `download_video_bytes(job, size)` — raw bytes
+- `MidjourneyClient(max_retries=3, retry_backoff=2.0)` — retries on network errors, 5xx, and 429 (respects Retry-After)
 
 ## Type System
 
