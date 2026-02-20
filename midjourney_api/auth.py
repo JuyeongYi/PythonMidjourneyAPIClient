@@ -88,7 +88,15 @@ class MidjourneyAuth:
 
         data = resp.json()
         self._id_token = data["id_token"]
-        self._refresh_token = data.get("refresh_token", self._refresh_token)
+
+        new_refresh_token = data.get("refresh_token", self._refresh_token)
+        if new_refresh_token != self._refresh_token:
+            # Firebase rotated the refresh token — persist it so other sessions
+            # (e.g. on a different PC) can use the latest token.
+            self._refresh_token = new_refresh_token
+            if self._env_path.exists():
+                set_key(str(self._env_path), "MJ_REFRESH_TOKEN", new_refresh_token)
+
         expires_in = int(data.get("expires_in", 3600))
         self._token_expiry = time.time() + expires_in
 
