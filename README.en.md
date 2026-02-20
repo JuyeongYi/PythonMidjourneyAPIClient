@@ -89,20 +89,23 @@ midjourney pan <job_id> 0 -d left -p "new prompt for panned area"
 ```bash
 # Generate animation from an imagine result (Image-to-Video)
 midjourney animate <job_id> 0
+midjourney animate <job_id> 0 --motion high --stealth    # motion strength, stealth mode
 
 # Generate from image files
-midjourney animate-from-image ./start.png                       # start only
-midjourney animate-from-image ./start.png ./end.png             # start+end
-midjourney animate-from-image ./start.png loop --motion high    # start+loop
+midjourney animate-from-image ./start.png                              # start only
+midjourney animate-from-image ./start.png --end-image ./end.png        # start+end
+midjourney animate-from-image ./start.png --end-image loop --motion high  # start+loop
+midjourney animate-from-image ./start.png --batch-size 2               # multiple variants
 
-# Post-process existing video jobs
-midjourney loop-video <job_id>                      # create looping version
-midjourney extend-video <job_id> --motion low       # extend (motion: low/high)
-midjourney extend-video <job_id> --motion high
+# Extend existing video
+midjourney extend-video <job_id> --motion low            # extend (motion: low/high)
+midjourney extend-video <job_id> --end-image ./frame.png # end frame → start_end type
+midjourney extend-video <job_id> --end-image loop        # create looping version
 
 # Download video
-midjourney download-video <job_id>                  # raw (.mp4)
-midjourney download-video <job_id> --size 1080      # social resolution
+midjourney download-video <job_id>                   # raw (.mp4)
+midjourney download-video <job_id> --size 1080       # social resolution
+midjourney download-video <job_id> --batch-size 2    # download all variants when batch_size > 1
 ```
 
 ### List Recent Jobs
@@ -157,26 +160,32 @@ with MidjourneyClient() as client:
 ### Animation Python API
 
 ```python
-with MidjourneyClient(print_log=True) as client:
+with MidjourneyClient() as client:
     # 1. Animate from imagine result (Image-to-Video)
     imagine_job = client.imagine("a black cat in moonlight", ar="1:1")
-    video_job = client.animate(imagine_job.id, index=0)
-    path = client.download_video(video_job, "./videos")
+    video_job = client.animate(imagine_job.id, index=0, motion="high", stealth=True)
+    paths = client.download_video(video_job, "./videos")   # list[Path]
     print(video_job.video_url())            # raw mp4
     print(video_job.video_url(size=1080))   # social
     print(video_job.gif_url())              # gif
 
     # 2. Animate from image files (3 modes)
     job_start_only = client.animate_from_image("./start.png")
-    job_start_end  = client.animate_from_image("./start.png", "./end.png")
-    job_loop       = client.animate_from_image("./start.png", "loop", motion="high")
+    job_start_end  = client.animate_from_image("./start.png", end_image="./end.png")
+    job_loop       = client.animate_from_image("./start.png", end_image="loop", motion="high")
 
-    # 3. Post-process existing video jobs
-    looped   = client.loop_video(video_job.id)
-    extended = client.extend_video(video_job.id, motion="low")
+    # 3. Extend existing video
+    extended   = client.extend_video(video_job.id, motion="low")
+    # end frame specified → vid_1.1_i2v_start_end type (automatic branching)
+    end_frame  = client.extend_video(video_job.id, end_image="./frame.png")
+    # --end loop: create looping version
+    looped     = client.extend_video(video_job.id, end_image="loop")
 
-    # 4. Get video as bytes (no disk I/O)
-    raw_bytes = client.download_video_bytes(video_job)
+    # 4. Download multiple variants (filename: {job_id}_{index}.mp4)
+    paths = client.download_video(video_job, "./videos", batch_size=2)
+
+    # 5. Get video as bytes (no disk I/O)
+    raw_bytes_list = client.download_video_bytes(video_job)
 ```
 
 ### Image References — Auto-upload via Client

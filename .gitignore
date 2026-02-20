@@ -9,3 +9,4 @@ build/
 *.egg-info/
 uv.lock
 midjourney-api-dev
+videos

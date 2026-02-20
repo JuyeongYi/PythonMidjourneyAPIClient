@@ -29,9 +29,10 @@ uv run midjourney pan <job_id> <index> -d up                           # Pan (up
 uv run midjourney animate <job_id> <index>                             # Animate from imagine grid
 uv run midjourney animate-from-image ./start.png                       # Animate: start only
 uv run midjourney animate-from-image ./start.png ./end.png             # Animate: start+end
-uv run midjourney animate-from-image ./start.png loop --motion high    # Animate: start+loop
-uv run midjourney loop-video <job_id>                                  # Loop existing video
+uv run midjourney animate-from-image ./start.png --end-image loop --motion high  # Animate: start+loop
 uv run midjourney extend-video <job_id> --motion low                   # Extend video
+uv run midjourney extend-video <job_id> --end-image ./frame.png        # Extend with end frame (start_end type)
+uv run midjourney extend-video <job_id> --end-image loop               # Loop version
 uv run midjourney download-video <job_id> [--size 1080]                # Download video
 uv run midjourney list                                                 # List recent jobs
 uv run midjourney download <job_id>                                    # Download images
@@ -39,8 +40,8 @@ uv run midjourney download <job_id>                                    # Downloa
 
 ## Architecture
 
-- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan, animate, animate_from_image, loop_video, extend_video, download
-- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`, `submit_animate`, `submit_animate_from_image`, `submit_loop_from_job`, `submit_extend_video`)
+- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan, animate, animate_from_image, extend_video, download
+- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`, `submit_animate`, `submit_animate_from_image`, `submit_extend_video`)
 - `midjourney_api/auth.py` — Firebase Auth / token refresh / Playwright browser login
 - `midjourney_api/models.py` — Dataclass models (`Job`, `UserSettings`)
 - `midjourney_api/params/types.py` — Custom types (`MJParam`, `_RangeInt`, `_Flag`, `_ModeEnum`, `SpeedMode`, `VisibilityMode`)
@@ -71,9 +72,11 @@ uv run midjourney download <job_id>                                    # Downloa
 - `download_images_bytes(job, size, indices)` — returns `list[bytes]` without disk I/O (for PIL/BytesIO processing)
 - Animation video types: `vid_1.1_i2v_{res}` (i2v), `vid_1.1_i2v_start_end_{res}` (start/end/loop), `vid_1.1_i2v_extend_{res}` (extend)
 - Video CDN: `cdn.midjourney.com/video/{job_id}/0.mp4` (raw), `0_{size}_N.mp4` (social), `0_N.gif` (gif)
-- `animate(job_id, index)` — i2v from imagine grid; `animate_from_image(start, end, motion)` — 3 modes (start-only / start+end / start+loop)
-- `loop_video(job_id)` — loop from existing video job; `extend_video(job_id, motion)` — extend with motion low/high
-- `download_video(job, output_dir, size)` — saves .mp4; `download_video_bytes(job, size)` — raw bytes
+- `animate(job_id, index, motion, stealth)` — i2v from imagine grid; supports motion low/high, stealth
+- `animate_from_image(start, end_image, motion, stealth, batch_size)` — 3 modes: start-only / start+end_image / start+end_image="loop"
+- `extend_video(job_id, index, end_image, motion, stealth, batch_size)` — extend video; `end_image` → `vid_1.1_i2v_start_end` (file/URL auto-uploaded, `"loop"` passed as-is)
+- `download_video(job, output_dir, size, batch_size)` → `list[Path]`; filename: `{job_id}_{index}.mp4`; `download_video_bytes(job, size, batch_size)` → `list[bytes]`
+- CLI `--verbose/-v`: global flag controlling `print_log`; job IDs always printed regardless
 - `MidjourneyClient(max_retries=3, retry_backoff=2.0)` — retries on network errors, 5xx, and 429 (respects Retry-After)
 
 ## Type System

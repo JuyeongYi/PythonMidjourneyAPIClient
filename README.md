@@ -89,20 +89,23 @@ midjourney pan <job_id> 0 -d left -p "new prompt for panned area"
 ```bash
 # imagine 결과에서 애니메이션 생성 (Image-to-Video)
 midjourney animate <job_id> 0
+midjourney animate <job_id> 0 --motion high --stealth    # 모션 강도, stealth 모드
 
 # 이미지 파일에서 생성
 midjourney animate-from-image ./start.png                       # 시작 이미지만
 midjourney animate-from-image ./start.png ./end.png             # 시작+끝 이미지
 midjourney animate-from-image ./start.png loop --motion high    # 시작+루프
+midjourney animate-from-image ./start.png --end-image ./end.png --batch-size 2
 
-# 기존 비디오 후처리
-midjourney loop-video <job_id>                      # 루프 버전 생성
-midjourney extend-video <job_id> --motion low       # 연장 (motion: low/high)
-midjourney extend-video <job_id> --motion high
+# 기존 비디오 연장
+midjourney extend-video <job_id> --motion low        # 연장 (motion: low/high)
+midjourney extend-video <job_id> --end-image ./frame.png         # end frame 지정 시 start_end 타입 사용
+midjourney extend-video <job_id> --end-image loop    # 루프 버전 생성
 
 # 비디오 다운로드
-midjourney download-video <job_id>                  # raw (.mp4)
-midjourney download-video <job_id> --size 1080      # social 해상도
+midjourney download-video <job_id>                   # raw (.mp4)
+midjourney download-video <job_id> --size 1080       # social 해상도
+midjourney download-video <job_id> --batch-size 2    # batch_size>1일 때 전체 다운로드
 ```
 
 ### 최근 작업 목록
@@ -234,26 +237,32 @@ with MidjourneyClient() as client:
 ### 애니메이션 Python API
 
 ```python
-with MidjourneyClient(print_log=True) as client:
+with MidjourneyClient() as client:
     # 1. imagine 결과 → 애니메이션
     imagine_job = client.imagine("a black cat in moonlight", ar="1:1")
-    video_job = client.animate(imagine_job.id, index=0)
-    path = client.download_video(video_job, "./videos")
-    print(video_job.video_url())       # raw mp4
-    print(video_job.video_url(size=1080))  # social
-    print(video_job.gif_url())         # gif
+    video_job = client.animate(imagine_job.id, index=0, motion="high", stealth=True)
+    paths = client.download_video(video_job, "./videos")   # list[Path]
+    print(video_job.video_url())            # raw mp4
+    print(video_job.video_url(size=1080))   # social
+    print(video_job.gif_url())              # gif
 
     # 2. 이미지 파일 → 애니메이션 (3가지 모드)
     job_start_only = client.animate_from_image("./start.png")
-    job_start_end  = client.animate_from_image("./start.png", "./end.png")
-    job_loop       = client.animate_from_image("./start.png", "loop", motion="high")
+    job_start_end  = client.animate_from_image("./start.png", end_image="./end.png")
+    job_loop       = client.animate_from_image("./start.png", end_image="loop", motion="high")
 
-    # 3. 기존 비디오에서 파생
-    looped   = client.loop_video(video_job.id)
-    extended = client.extend_video(video_job.id, motion="low")
+    # 3. 기존 비디오 연장
+    extended      = client.extend_video(video_job.id, motion="low")
+    # end frame 지정 → vid_1.1_i2v_start_end (start_end 타입으로 자동 분기)
+    end_frame     = client.extend_video(video_job.id, end_image="./frame.png")
+    # --end loop: 루프 버전
+    looped        = client.extend_video(video_job.id, end_image="loop")
 
-    # 4. 비디오 바이트로 받기
-    raw_bytes = client.download_video_bytes(video_job)
+    # 4. batch_size > 1 다운로드 (파일명: {job_id}_{index}.mp4)
+    paths = client.download_video(video_job, "./videos", batch_size=2)
+
+    # 5. 비디오 바이트로 받기
+    raw_bytes_list = client.download_video_bytes(video_job)
 ```
 
 ### 파라미터 시스템
