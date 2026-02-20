@@ -206,7 +206,6 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
             args.index,
             end_image=args.end_image,
             motion=args.motion,
-            loop=args.loop,
             batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
@@ -356,9 +355,7 @@ def main() -> None:
     p_ext.add_argument("job_id", help="Source video job ID")
     p_ext.add_argument("index", type=int, nargs="?", default=0, help="Batch variant index (default: 0)")
     p_ext.add_argument("--end-image", default=None, dest="end_image",
-                       help="End frame (local file or URL); switches to start+end mode")
-    p_ext.add_argument("--loop", action="store_true",
-                       help="Create a seamless loop instead of extending")
+                       help="End frame (local file, URL, or 'loop' for seamless loop)")
     p_ext.add_argument("--motion", choices=["low", "high"], default=None,
                        help="Motion intensity (low or high, non-loop only)")
     p_ext.add_argument("--batch-size", type=int, default=1, dest="batch_size",

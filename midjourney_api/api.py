@@ -470,7 +470,6 @@ class MidjourneyAPI:
         index: int = 0,
         end_url: str | None = None,
         motion: str | None = None,
-        loop: bool = False,
         batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
@@ -478,17 +477,16 @@ class MidjourneyAPI:
     ) -> Job:
         """Extend an existing video job.
 
-        Three modes depending on parameters:
-        - Default:           ``vid_1.1_i2v_extend`` (lengthen the video)
-        - ``loop=True``:     ``vid_1.1_i2v_start_end`` + ``--end loop``
-        - ``end_url=<url>``: ``vid_1.1_i2v_start_end`` + ``--end {url}``
+        Two modes depending on end_url:
+        - ``end_url=None``:   ``vid_1.1_i2v_extend`` (lengthen the video)
+        - ``end_url="loop"``: ``vid_1.1_i2v_start_end`` + ``--end loop``
+        - ``end_url=<url>``:  ``vid_1.1_i2v_start_end`` + ``--end {url}``
 
         Args:
             job_id: Completed video job ID to extend.
             index: Batch variant index to extend (default 0).
-            end_url: CDN URL for the end frame. Switches to start+end mode.
+            end_url: End frame URL, "loop" for seamless loop, or None to just extend.
             motion: Motion intensity ("low" or "high").
-            loop: If True, create a seamless loop (overridden by end_url).
             batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
@@ -496,12 +494,12 @@ class MidjourneyAPI:
         """
         self._check_resolution(resolution)
 
-        if end_url or loop:
+        if end_url:
             parts = [f"--bs {batch_size}"]
             if motion:
                 parts.append(f"--motion {motion}")
             parts.append("--video 1")
-            parts.append(f"--end {end_url if end_url else 'loop'}")
+            parts.append(f"--end {end_url}")
             full_prompt = " ".join(parts)
             payload = self._video_payload(
                 video_type=f"vid_1.1_i2v_start_end_{resolution}",
