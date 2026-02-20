@@ -181,10 +181,18 @@ class OmniWeight(_RangeInt):
     _min, _max, _name = 1, 1000, "ow"
 
 
-class StyleVersion(_RangeInt):
-    """Style version (--sv). Use 4 to apply old V7 style codes."""
+class StyleVersion(MJParam, int):
+    """Style version (--sv). Valid values: 6, 7, 8."""
     _flag = "--sv"
-    _min, _max, _name = 1, 4, "sv"
+    _allowed = (6, 7, 8)
+
+    def __new__(cls, value: int):
+        value = int(value)
+        if value not in cls._allowed:
+            raise ValidationError(
+                f"sv must be one of {cls._allowed}, got {value}"
+            )
+        return int.__new__(cls, value)
 
 
 class Quality(MJParam, int):
