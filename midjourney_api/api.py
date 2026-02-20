@@ -447,46 +447,6 @@ class MidjourneyAPI:
             event_type=event_type,
         )
 
-    def submit_loop_from_job(
-        self,
-        job_id: str,
-        batch_size: int = 1,
-        resolution: str = "480",
-        mode: str = "fast",
-        private: bool = False,
-    ) -> Job:
-        """Submit a looping video from an existing video job.
-
-        Uses videoType vid_1.1_i2v_start_end with parentJob and --end loop.
-
-        Args:
-            job_id: Completed video job ID to loop.
-            batch_size: Number of video variants (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            private: Whether to make the job private.
-        """
-        self._check_resolution(resolution)
-        parts = [f"--bs {batch_size}", "--video 1", "--end loop"]
-        full_prompt = " ".join(parts)
-        payload = self._video_payload(
-            video_type=f"vid_1.1_i2v_start_end_{resolution}",
-            new_prompt=full_prompt,
-            parent_job={"job_id": job_id, "image_num": 0},
-            animate_mode="manual",
-            mode=mode,
-            private=private,
-        )
-        data = self._request("POST", "/api/submit-jobs", json=payload)
-        return Job(
-            id=self._extract_video_job_id(data),
-            prompt=full_prompt,
-            status="pending",
-            user_id=self._auth.user_id,
-            parent_id=job_id,
-            event_type="video_start_end",
-        )
-
     def submit_extend_video(
         self,
         job_id: str,

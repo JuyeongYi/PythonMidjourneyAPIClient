@@ -336,40 +336,6 @@ class MidjourneyClient:
             return job
         return self._poll_job(job.id, poll_interval, timeout)
 
-    def loop_video(
-        self,
-        job_id: str,
-        *,
-        batch_size: int = 1,
-        resolution: str = "480",
-        wait: bool = True,
-        poll_interval: float = 5,
-        timeout: float = 600,
-        mode: str = "fast",
-    ) -> Job:
-        """Create a looping version of an existing video job.
-
-        Args:
-            job_id: Completed video job ID.
-            batch_size: Number of video variants (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-
-        Returns:
-            Completed Job with video_url()/gif_url() available.
-        """
-        job = self._api.submit_loop_from_job(
-            job_id, batch_size=batch_size, resolution=resolution, mode=mode,
-        )
-        self._log(f"Loop video submitted: {job.id}")
-
-        if not wait:
-            return job
-        return self._poll_job(job.id, poll_interval, timeout)
-
     def extend_video(
         self,
         job_id: str,
