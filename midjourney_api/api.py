@@ -337,6 +337,7 @@ class MidjourneyAPI:
         job_id: str,
         index: int,
         prompt: str = "",
+        batch_size: int | None = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -347,14 +348,23 @@ class MidjourneyAPI:
             job_id: Completed imagine job ID to animate.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
+            batch_size: Number of video variants to generate (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
+        parts = []
+        if prompt:
+            parts.append(prompt)
+        if batch_size is not None:
+            parts.append(f"--bs {batch_size}")
+        parts.append("--video 1")
+        full_prompt = " ".join(parts)
+
         payload = self._video_payload(
             video_type=f"vid_1.1_i2v_{resolution}",
-            new_prompt=prompt,
+            new_prompt=full_prompt,
             parent_job={"job_id": job_id, "image_num": index},
             animate_mode="auto",
             mode=mode,
@@ -363,7 +373,7 @@ class MidjourneyAPI:
         data = self._request("POST", "/api/submit-jobs", json=payload)
         return Job(
             id=self._extract_video_job_id(data),
-            prompt=prompt,
+            prompt=full_prompt,
             status="pending",
             user_id=self._auth.user_id,
             parent_id=job_id,
@@ -376,53 +386,76 @@ class MidjourneyAPI:
         end_url: str | None = None,
         motion: str | None = None,
         prompt: str = "",
+        batch_size: int | None = None,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
         """Submit an animation from image files.
 
-        Three modes depending on end_url and motion:
-        - start only:   end_url=None
-        - start+end:    end_url=<cdn url>
-        - start+loop:   end_url="loop", motion="low"|"high"
+        Modes:
+        - Single image (end_url=None):  ``vid_1.1_i2v_{res}``, ``animateMode=manual``
+        - Start+end (end_url=<url>):    ``vid_1.1_i2v_start_end_{res}``, ``--bs 1``
+        - Start+loop (end_url="loop"):  ``vid_1.1_i2v_start_end_{res}``, ``--bs 1 --motion {motion}``
 
         Args:
             start_url: CDN URL of the start frame image.
-            end_url: CDN URL of end frame, "loop" for looping, or None for start-only.
+            end_url: CDN URL of end frame, "loop" for looping, or None for single-image mode.
             motion: Motion intensity ("low" or "high"). Used with end_url="loop".
             prompt: Optional text prompt.
+            batch_size: Number of video variants (``--bs N``).
+                        Defaults to None (server default=4) for single-image; 1 for start+end/loop.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
-        parts = [start_url]
-        if prompt:
-            parts.append(prompt)
-        parts.append("--bs 1")
-        if motion and end_url == "loop":
-            parts.append(f"--motion {motion}")
-        parts.append("--video 1")
-        if end_url:
-            parts.append(f"--end {end_url}")
-        full_prompt = " ".join(parts)
 
-        payload = self._video_payload(
-            video_type=f"vid_1.1_i2v_start_end_{resolution}",
-            new_prompt=full_prompt,
-            parent_job=None,
-            animate_mode="manual",
-            mode=mode,
-            private=private,
-        )
+        if end_url is None:
+            # Single-image mode: vid_1.1_i2v, no --bs by default
+            parts = [start_url]
+            if prompt:
+                parts.append(prompt)
+            if batch_size is not None:
+                parts.append(f"--bs {batch_size}")
+            parts.append("--video 1")
+            full_prompt = " ".join(parts)
+            payload = self._video_payload(
+                video_type=f"vid_1.1_i2v_{resolution}",
+                new_prompt=full_prompt,
+                parent_job=None,
+                animate_mode="manual",
+                mode=mode,
+                private=private,
+            )
+        else:
+            # Start+end or start+loop: vid_1.1_i2v_start_end, --bs 1 default
+            effective_batch = batch_size if batch_size is not None else 1
+            parts = [start_url]
+            if prompt:
+                parts.append(prompt)
+            parts.append(f"--bs {effective_batch}")
+            if motion and end_url == "loop":
+                parts.append(f"--motion {motion}")
+            parts.append("--video 1")
+            parts.append(f"--end {end_url}")
+            full_prompt = " ".join(parts)
+            payload = self._video_payload(
+                video_type=f"vid_1.1_i2v_start_end_{resolution}",
+                new_prompt=full_prompt,
+                parent_job=None,
+                animate_mode="manual",
+                mode=mode,
+                private=private,
+            )
+
         data = self._request("POST", "/api/submit-jobs", json=payload)
         return Job(
             id=self._extract_video_job_id(data),
             prompt=full_prompt,
             status="pending",
             user_id=self._auth.user_id,
-            event_type="video_start_end",
+            event_type="video_start_end" if end_url is not None else "video_diffusion",
         )
 
     def submit_loop_from_job(

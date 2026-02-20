@@ -250,6 +250,7 @@ class MidjourneyClient:
         index: int,
         *,
         prompt: str = "",
+        batch_size: int | None = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -262,6 +263,7 @@ class MidjourneyClient:
             job_id: Completed imagine job ID.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
+            batch_size: Number of video variants to generate (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
@@ -272,7 +274,8 @@ class MidjourneyClient:
             Completed Job with video_url()/gif_url() available.
         """
         job = self._api.submit_animate(
-            job_id, index, prompt=prompt, resolution=resolution, mode=mode,
+            job_id, index, prompt=prompt, batch_size=batch_size,
+            resolution=resolution, mode=mode,
         )
         self._log(f"Animate submitted: {job.id}")
 
@@ -287,6 +290,7 @@ class MidjourneyClient:
         *,
         motion: str | None = None,
         prompt: str = "",
+        batch_size: int | None = None,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -296,15 +300,17 @@ class MidjourneyClient:
         """Generate an animation from image files.
 
         Modes:
-        - Start only:   end_image=None
-        - Start+end:    end_image=<local file or URL>
-        - Start+loop:   end_image="loop", motion="low"|"high"
+        - Single image (end_image=None):  ``vid_1.1_i2v``, default batch_size=server default (4)
+        - Start+end (end_image=<file/URL>): ``vid_1.1_i2v_start_end``, default batch_size=1
+        - Start+loop (end_image="loop"):    ``vid_1.1_i2v_start_end``, ``--motion {motion}``
 
         Args:
             start_image: Local file or URL for the start frame (auto-uploaded if local).
             end_image: Local file/URL for end frame, "loop" for loop mode, or None.
             motion: Motion intensity ("low" or "high"). Required when end_image="loop".
             prompt: Optional text prompt.
+            batch_size: Number of video variants (``--bs N``).
+                        Defaults to None (server default=4) for single-image; 1 for start+end/loop.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
@@ -323,7 +329,7 @@ class MidjourneyClient:
 
         job = self._api.submit_animate_from_image(
             start_url, end_url=end_url, motion=motion,
-            prompt=prompt, resolution=resolution, mode=mode,
+            prompt=prompt, batch_size=batch_size, resolution=resolution, mode=mode,
         )
         self._log(f"Animate from image submitted: {job.id}")
 
