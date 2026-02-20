@@ -143,6 +143,83 @@ def cmd_pan(args: argparse.Namespace) -> None:
             client.download_images(job, args.output, size=args.size)
 
 
+def cmd_animate(args: argparse.Namespace) -> None:
+    """Handle the animate command (i2v from imagine)."""
+    from midjourney_api.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+        job = client.animate(
+            args.job_id, args.index,
+            prompt=args.prompt,
+            resolution=args.resolution,
+            mode=args.mode,
+        )
+        print(f"Job ID: {job.id}")
+        path = client.download_video(job, output_dir=args.output, size=args.size)
+        print(f"Saved: {path}")
+
+
+def cmd_animate_from_image(args: argparse.Namespace) -> None:
+    """Handle the animate-from-image command (start / start+end / start+loop)."""
+    from midjourney_api.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+        job = client.animate_from_image(
+            args.start_image,
+            args.end_image,
+            motion=args.motion,
+            prompt=args.prompt,
+            resolution=args.resolution,
+            mode=args.mode,
+        )
+        print(f"Job ID: {job.id}")
+        path = client.download_video(job, output_dir=args.output, size=args.size)
+        print(f"Saved: {path}")
+
+
+def cmd_loop_video(args: argparse.Namespace) -> None:
+    """Handle the loop-video command (loop from existing video job)."""
+    from midjourney_api.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+        job = client.loop_video(
+            args.job_id,
+            resolution=args.resolution,
+            mode=args.mode,
+        )
+        print(f"Job ID: {job.id}")
+        path = client.download_video(job, output_dir=args.output, size=args.size)
+        print(f"Saved: {path}")
+
+
+def cmd_extend_video(args: argparse.Namespace) -> None:
+    """Handle the extend-video command."""
+    from midjourney_api.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env, print_log=True) as client:
+        job = client.extend_video(
+            args.job_id,
+            motion=args.motion,
+            resolution=args.resolution,
+            mode=args.mode,
+        )
+        print(f"Job ID: {job.id}")
+        path = client.download_video(job, output_dir=args.output, size=args.size)
+        print(f"Saved: {path}")
+
+
+def cmd_download_video(args: argparse.Namespace) -> None:
+    """Handle the download-video command."""
+    from midjourney_api.client import MidjourneyClient
+    from midjourney_api.models import Job
+
+    with MidjourneyClient(env_path=args.env) as client:
+        job = Job(id=args.job_id, prompt="", status="completed",
+                  user_id=client.user_id, event_type="video_diffusion")
+        path = client.download_video(job, output_dir=args.output, size=args.size)
+        print(f"Saved: {path}")
+
+
 def cmd_download(args: argparse.Namespace) -> None:
     """Handle the download command."""
     from midjourney_api.client import MidjourneyClient
@@ -228,6 +305,53 @@ def main() -> None:
     p_pan.add_argument("-o", "--output", default="./images", help="Output directory")
     p_pan.add_argument("--size", type=int, default=640, help="Image download size")
 
+    # animate (i2v from imagine)
+    p_animate = sub.add_parser("animate", help="Generate animation from an imagine job")
+    p_animate.add_argument("job_id", help="Source imagine job ID")
+    p_animate.add_argument("index", type=int, help="Image index (0-3)")
+    p_animate.add_argument("-p", "--prompt", default="", help="Additional prompt text")
+    p_animate.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
+    p_animate.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_animate.add_argument("-o", "--output", default="./videos", help="Output directory")
+    p_animate.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
+
+    # animate-from-image (start / start+end / start+loop)
+    p_afi = sub.add_parser("animate-from-image", help="Generate animation from image files")
+    p_afi.add_argument("start_image", help="Start frame (local file or URL)")
+    p_afi.add_argument("end_image", nargs="?", default=None,
+                       help="End frame (local file or URL), 'loop' for looping, or omit for start-only")
+    p_afi.add_argument("--motion", choices=["low", "high"], default=None,
+                       help="Motion intensity (required for loop mode)")
+    p_afi.add_argument("-p", "--prompt", default="", help="Text prompt")
+    p_afi.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
+    p_afi.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_afi.add_argument("-o", "--output", default="./videos", help="Output directory")
+    p_afi.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
+
+    # loop-video (loop from existing video job)
+    p_loop = sub.add_parser("loop-video", help="Create a looping version of a video job")
+    p_loop.add_argument("job_id", help="Source video job ID")
+    p_loop.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
+    p_loop.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_loop.add_argument("-o", "--output", default="./videos", help="Output directory")
+    p_loop.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
+
+    # extend-video
+    p_ext = sub.add_parser("extend-video", help="Extend an existing video job")
+    p_ext.add_argument("job_id", help="Source video job ID")
+    p_ext.add_argument("--motion", choices=["low", "high"], default=None,
+                       help="Motion intensity (low or high)")
+    p_ext.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
+    p_ext.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_ext.add_argument("-o", "--output", default="./videos", help="Output directory")
+    p_ext.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
+
+    # download-video
+    p_dlv = sub.add_parser("download-video", help="Download video for a completed video job")
+    p_dlv.add_argument("job_id", help="Video job ID")
+    p_dlv.add_argument("-o", "--output", default="./videos", help="Output directory")
+    p_dlv.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
+
     # list
     p_list = sub.add_parser("list", help="List recent jobs")
     p_list.add_argument("-n", "--limit", type=int, default=20, help="Max jobs to list")
@@ -246,6 +370,11 @@ def main() -> None:
         "vary": cmd_vary,
         "upscale": cmd_upscale,
         "pan": cmd_pan,
+        "animate": cmd_animate,
+        "animate-from-image": cmd_animate_from_image,
+        "loop-video": cmd_loop_video,
+        "extend-video": cmd_extend_video,
+        "download-video": cmd_download_video,
         "list": cmd_list,
         "download": cmd_download,
     }
