@@ -157,8 +157,9 @@ def cmd_animate(args: argparse.Namespace) -> None:
             mode=args.mode,
         )
         print(f"Job ID: {job.id}")
-        path = client.download_video(job, output_dir=args.output, size=args.size)
-        print(f"Saved: {path}")
+        paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
+        for p in paths:
+            print(f"Saved: {p}")
 
 
 def cmd_animate_from_image(args: argparse.Namespace) -> None:
@@ -176,8 +177,9 @@ def cmd_animate_from_image(args: argparse.Namespace) -> None:
             mode=args.mode,
         )
         print(f"Job ID: {job.id}")
-        path = client.download_video(job, output_dir=args.output, size=args.size)
-        print(f"Saved: {path}")
+        paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
+        for p in paths:
+            print(f"Saved: {p}")
 
 
 def cmd_loop_video(args: argparse.Namespace) -> None:
@@ -192,8 +194,9 @@ def cmd_loop_video(args: argparse.Namespace) -> None:
             mode=args.mode,
         )
         print(f"Job ID: {job.id}")
-        path = client.download_video(job, output_dir=args.output, size=args.size)
-        print(f"Saved: {path}")
+        paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
+        for p in paths:
+            print(f"Saved: {p}")
 
 
 def cmd_extend_video(args: argparse.Namespace) -> None:
@@ -209,8 +212,9 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
             mode=args.mode,
         )
         print(f"Job ID: {job.id}")
-        path = client.download_video(job, output_dir=args.output, size=args.size)
-        print(f"Saved: {path}")
+        paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
+        for p in paths:
+            print(f"Saved: {p}")
 
 
 def cmd_download_video(args: argparse.Namespace) -> None:
@@ -221,8 +225,9 @@ def cmd_download_video(args: argparse.Namespace) -> None:
     with MidjourneyClient(env_path=args.env) as client:
         job = Job(id=args.job_id, prompt="", status="completed",
                   user_id=client.user_id, event_type="video_diffusion")
-        path = client.download_video(job, output_dir=args.output, size=args.size)
-        print(f"Saved: {path}")
+        paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
+        for p in paths:
+            print(f"Saved: {p}")
 
 
 def cmd_download(args: argparse.Namespace) -> None:
@@ -362,6 +367,8 @@ def main() -> None:
     # download-video
     p_dlv = sub.add_parser("download-video", help="Download video for a completed video job")
     p_dlv.add_argument("job_id", help="Video job ID")
+    p_dlv.add_argument("--batch-size", type=int, default=1, dest="batch_size",
+                       help="Number of variants to download (default: 1)")
     p_dlv.add_argument("-o", "--output", default="./videos", help="Output directory")
     p_dlv.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
 

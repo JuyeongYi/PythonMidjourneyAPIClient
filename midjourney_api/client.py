@@ -412,51 +412,63 @@ class MidjourneyClient:
         job: Job,
         output_dir: str = "./videos",
         size: int | None = None,
-    ) -> Path:
+        batch_size: int = 1,
+    ) -> list[Path]:
         """Download a completed animation video to disk.
 
         Args:
             job: Completed video Job.
             output_dir: Directory to save the video.
             size: Resolution (e.g. 1080 for social). None = raw original.
+            batch_size: Number of variants to download (matches --batch-size used at submit).
 
         Returns:
-            Path to the saved .mp4 file.
+            List of paths to saved .mp4 files.
         """
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
 
-        url = job.video_url(size=size)
-        suffix = f"_{size}" if size else ""
-        file_path = out / f"{job.id}{suffix}.mp4"
+        size_suffix = f"_{size}" if size else ""
+        paths: list[Path] = []
 
-        self._log("Downloading video...")
-        resp = curl_requests.get(url, timeout=120, impersonate="chrome")
-        resp.raise_for_status()
-        with open(file_path, "wb") as f:
-            f.write(resp.content)
+        for i in range(batch_size):
+            url = job.video_url(index=i, size=size)
+            file_path = out / f"{job.id}_{i}{size_suffix}.mp4"
 
-        self._log(f"  Saved: {file_path}")
-        return file_path
+            self._log(f"Downloading video {i}...")
+            resp = curl_requests.get(url, timeout=120, impersonate="chrome")
+            resp.raise_for_status()
+            with open(file_path, "wb") as f:
+                f.write(resp.content)
+
+            self._log(f"  Saved: {file_path}")
+            paths.append(file_path)
+
+        return paths
 
     def download_video_bytes(
         self,
         job: Job,
         size: int | None = None,
-    ) -> bytes:
+        batch_size: int = 1,
+    ) -> list[bytes]:
         """Download a completed animation video as raw bytes (no disk I/O).
 
         Args:
             job: Completed video Job.
             size: Resolution (e.g. 1080 for social). None = raw original.
+            batch_size: Number of variants to download (matches --batch-size used at submit).
 
         Returns:
-            Raw MP4 bytes.
+            List of raw MP4 bytes, one per batch variant.
         """
-        url = job.video_url(size=size)
-        resp = curl_requests.get(url, timeout=120, impersonate="chrome")
-        resp.raise_for_status()
-        return resp.content
+        result: list[bytes] = []
+        for i in range(batch_size):
+            url = job.video_url(index=i, size=size)
+            resp = curl_requests.get(url, timeout=120, impersonate="chrome")
+            resp.raise_for_status()
+            result.append(resp.content)
+        return result
 
     def download_images(
         self,
