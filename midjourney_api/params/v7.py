@@ -19,6 +19,7 @@ from midjourney_api.params.types import (
     SpeedMode,
     Stop,
     StyleRef,
+    StyleVersion,
     StyleWeight,
     Stylize,
     Tile,
@@ -42,6 +43,7 @@ class V7Params(BaseParams):
         "iw": ImageWeight,
         "sref": StyleRef,
         "sw": StyleWeight,
+        "sv": StyleVersion,
         "oref": OmniRef,
         "ow": OmniWeight,
         "personalize": Personalize,
@@ -75,6 +77,7 @@ class V7Params(BaseParams):
         # Reference
         sref: StyleRef | None = None,
         sw: StyleWeight | None = None,
+        sv: StyleVersion | None = None,
         oref: OmniRef | None = None,
         ow: OmniWeight | None = None,
         personalize: Personalize | None = None,
@@ -101,6 +104,7 @@ class V7Params(BaseParams):
         # Reference params
         self.sref = sref
         self.sw = sw
+        self.sv = sv
         self.oref = oref
         self.ow = ow
         self.personalize = personalize
@@ -175,6 +179,8 @@ class V7Params(BaseParams):
         if self.sref:
             parts.append(self.sref.to_prompt(v))
             parts.append((self.sw if self.sw is not None else StyleWeight(100)).to_prompt(v))
+        if self.sv is not None:
+            parts.append(self.sv.to_prompt(v))
         if self.oref:
             parts.append(self.oref.to_prompt(v))
             parts.append((self.ow if self.ow is not None else OmniWeight(100)).to_prompt(v))

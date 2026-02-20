@@ -19,7 +19,7 @@ class Version(int):
     """Midjourney model version."""
 
     _flag = "--v"
-    _supported = {7}
+    _supported = {6, 7}
 
     def __new__(cls, value: int):
         value = int(value)
@@ -179,6 +179,12 @@ class StyleWeight(_RangeInt):
 class OmniWeight(_RangeInt):
     _flag = "--ow"
     _min, _max, _name = 1, 1000, "ow"
+
+
+class StyleVersion(_RangeInt):
+    """Style version (--sv). Use 4 to apply old V7 style codes."""
+    _flag = "--sv"
+    _min, _max, _name = 1, 4, "sv"
 
 
 class Quality(MJParam, int):

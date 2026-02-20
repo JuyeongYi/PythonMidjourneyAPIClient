@@ -15,6 +15,7 @@ from midjourney_api.params.types import (
     Seed,
     SpeedMode,
     Stop,
+    StyleVersion,
     StyleWeight,
     Stylize,
     VisibilityMode,
@@ -33,7 +34,12 @@ def cmd_login(args: argparse.Namespace) -> None:
 
 def cmd_imagine(args: argparse.Namespace) -> None:
     """Handle the imagine command."""
+    import sys
     from midjourney_api.client import MidjourneyClient
+
+    if args.version == 8:
+        print("Error: Version 8 is not yet implemented.", file=sys.stderr)
+        sys.exit(1)
 
     params = {}
     if args.ar:
@@ -68,6 +74,8 @@ def cmd_imagine(args: argparse.Namespace) -> None:
         params["ow"] = args.ow
     if args.sw is not None:
         params["sw"] = args.sw
+    if args.sv is not None:
+        params["sv"] = args.sv
     if args.niji is not None:
         params["niji"] = args.niji
     if args.personalize is not None:
@@ -275,13 +283,16 @@ def main() -> None:
     p_imagine.add_argument("--raw", action="store_true", help="Enable raw mode")
     p_imagine.add_argument("--draft", action="store_true", help="Enable draft mode")
     p_imagine.add_argument("--sref", help="Style reference (local file, URL, or code)")
+    p_imagine.add_argument("--sw", type=StyleWeight, help="Style weight: 0-1000, default 100")
+    p_imagine.add_argument("--sv", type=StyleVersion, default=None,
+                           help="Style version: 1-4 (use 4 for old V7 style codes)")
     p_imagine.add_argument("--oref", help="Object/character reference (local file or URL)")
     p_imagine.add_argument("--ow", type=OmniWeight, help="1-1000, default 100")
-    p_imagine.add_argument("--sw", type=StyleWeight, help="0-1000, default 100")
     p_imagine.add_argument("-p", "--personalize", nargs="?", const="", default=None,
                            help="Personalization code (omit value for default)")
     p_imagine.add_argument("--niji", type=int, default=None, help="Niji model version (e.g. 7)")
-    p_imagine.add_argument("-v", "--version", type=int, default=7, help="Model version")
+    p_imagine.add_argument("-v", "--version", type=int, default=7,
+                           help="Model version: 6 or 7 (default: 7)")
     p_imagine.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
     p_imagine.add_argument("--visibility", type=VisibilityMode, default=None)
     p_imagine.add_argument("-o", "--output", default="./images", help="Output directory")
