@@ -83,6 +83,7 @@ def cmd_imagine(args: argparse.Namespace) -> None:
             mode=args.mode,
             **params,
         )
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -110,6 +111,7 @@ def cmd_vary(args: argparse.Namespace) -> None:
             strong=(not args.subtle),
             mode=args.mode,
         )
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -125,6 +127,7 @@ def cmd_upscale(args: argparse.Namespace) -> None:
             upscale_type=type_map[args.type],
             mode=args.mode,
         )
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -140,6 +143,7 @@ def cmd_pan(args: argparse.Namespace) -> None:
             prompt=args.prompt or "",
             mode=args.mode,
         )
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -152,9 +156,11 @@ def cmd_animate(args: argparse.Namespace) -> None:
         job = client.animate(
             args.job_id, args.index,
             prompt=args.prompt,
+            motion=args.motion,
             batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
+            stealth=args.stealth,
         )
         print(f"Job ID: {job.id}")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
@@ -175,6 +181,7 @@ def cmd_animate_from_image(args: argparse.Namespace) -> None:
             batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
+            stealth=args.stealth,
         )
         print(f"Job ID: {job.id}")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
@@ -195,6 +202,7 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
             batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
+            stealth=args.stealth,
         )
         print(f"Job ID: {job.id}")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
@@ -306,10 +314,13 @@ def main() -> None:
     p_animate.add_argument("job_id", help="Source imagine job ID")
     p_animate.add_argument("index", type=int, help="Image index (0-3)")
     p_animate.add_argument("-p", "--prompt", default="", help="Additional prompt text")
+    p_animate.add_argument("--motion", choices=["low", "high"], default=None,
+                           help="Motion intensity (low or high)")
     p_animate.add_argument("--batch-size", type=int, default=1, dest="batch_size",
                            help="Number of video variants to generate (default: 1)")
     p_animate.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_animate.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_animate.add_argument("--stealth", action="store_true", help="Generate in stealth mode")
     p_animate.add_argument("-o", "--output", default="./videos", help="Output directory")
     p_animate.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
 
@@ -325,6 +336,7 @@ def main() -> None:
                        help="Number of video variants to generate (default: 1)")
     p_afi.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_afi.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_afi.add_argument("--stealth", action="store_true", help="Generate in stealth mode")
     p_afi.add_argument("-o", "--output", default="./videos", help="Output directory")
     p_afi.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
 
@@ -340,6 +352,7 @@ def main() -> None:
                        help="Number of video variants to generate (default: 1)")
     p_ext.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_ext.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_ext.add_argument("--stealth", action="store_true", help="Generate in stealth mode")
     p_ext.add_argument("-o", "--output", default="./videos", help="Output directory")
     p_ext.add_argument("--size", type=int, default=None, help="Social resolution (e.g. 1080)")
 

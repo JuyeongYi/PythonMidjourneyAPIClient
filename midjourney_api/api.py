@@ -337,6 +337,7 @@ class MidjourneyAPI:
         job_id: str,
         index: int,
         prompt: str = "",
+        motion: str | None = None,
         batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
@@ -348,16 +349,19 @@ class MidjourneyAPI:
             job_id: Completed imagine job ID to animate.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
+            motion: Motion intensity ("low" or "high").
             batch_size: Number of video variants to generate (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
-            private: Whether to make the job private.
+            private: Whether to make the job private (stealth).
         """
         self._check_resolution(resolution)
         parts = []
         if prompt:
             parts.append(prompt)
         parts.append(f"--bs {batch_size}")
+        if motion:
+            parts.append(f"--motion {motion}")
         parts.append("--video 1")
         full_prompt = " ".join(parts)
 
@@ -420,7 +424,7 @@ class MidjourneyAPI:
             parent_job = None
             event_type = "video_diffusion"
         else:
-            if motion and end_url == "loop":
+            if motion:
                 parts.append(f"--motion {motion}")
             parts.append("--video 1")
             parts.append(f"--end {end_url}")

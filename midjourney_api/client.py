@@ -250,12 +250,14 @@ class MidjourneyClient:
         index: int,
         *,
         prompt: str = "",
+        motion: str | None = None,
         batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
         timeout: float = 600,
         mode: str = "fast",
+        stealth: bool = False,
     ) -> Job:
         """Generate an animation from a completed imagine job.
 
@@ -263,19 +265,21 @@ class MidjourneyClient:
             job_id: Completed imagine job ID.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
+            motion: Motion intensity ("low" or "high").
             batch_size: Number of video variants to generate (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
             mode: Speed mode ('fast', 'relax', 'turbo').
+            stealth: If True, generate in stealth (private) mode.
 
         Returns:
             Completed Job with video_url()/gif_url() available.
         """
         job = self._api.submit_animate(
-            job_id, index, prompt=prompt, batch_size=batch_size,
-            resolution=resolution, mode=mode,
+            job_id, index, prompt=prompt, motion=motion, batch_size=batch_size,
+            resolution=resolution, mode=mode, private=stealth,
         )
         self._log(f"Animate submitted: {job.id}")
 
@@ -296,6 +300,7 @@ class MidjourneyClient:
         poll_interval: float = 5,
         timeout: float = 600,
         mode: str = "fast",
+        stealth: bool = False,
     ) -> Job:
         """Generate an animation from image files.
 
@@ -307,7 +312,7 @@ class MidjourneyClient:
         Args:
             start_image: Local file or URL for the start frame (auto-uploaded if local).
             end_image: Local file/URL for end frame, "loop" for loop mode, or None.
-            motion: Motion intensity ("low" or "high"). Required when end_image="loop".
+            motion: Motion intensity ("low" or "high").
             prompt: Optional text prompt.
             batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
@@ -315,6 +320,7 @@ class MidjourneyClient:
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
             mode: Speed mode ('fast', 'relax', 'turbo').
+            stealth: If True, generate in stealth (private) mode.
 
         Returns:
             Completed Job with video_url()/gif_url() available.
@@ -328,7 +334,8 @@ class MidjourneyClient:
 
         job = self._api.submit_animate_from_image(
             start_url, end_url=end_url, motion=motion,
-            prompt=prompt, batch_size=batch_size, resolution=resolution, mode=mode,
+            prompt=prompt, batch_size=batch_size, resolution=resolution,
+            mode=mode, private=stealth,
         )
         self._log(f"Animate from image submitted: {job.id}")
 
@@ -349,6 +356,7 @@ class MidjourneyClient:
         poll_interval: float = 5,
         timeout: float = 600,
         mode: str = "fast",
+        stealth: bool = False,
     ) -> Job:
         """Extend a completed video job, or create a seamless loop.
 
@@ -363,13 +371,14 @@ class MidjourneyClient:
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
             mode: Speed mode ('fast', 'relax', 'turbo').
+            stealth: If True, generate in stealth (private) mode.
 
         Returns:
             Completed Job with video_url()/gif_url() available.
         """
         job = self._api.submit_extend_video(
             job_id, index=index, motion=motion, loop=loop,
-            batch_size=batch_size, resolution=resolution, mode=mode,
+            batch_size=batch_size, resolution=resolution, mode=mode, private=stealth,
         )
         self._log(f"Extend video submitted: {job.id}")
 
