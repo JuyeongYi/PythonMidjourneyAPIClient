@@ -250,7 +250,7 @@ class MidjourneyClient:
         index: int,
         *,
         prompt: str = "",
-        batch_size: int | None = 1,
+        batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -290,7 +290,7 @@ class MidjourneyClient:
         *,
         motion: str | None = None,
         prompt: str = "",
-        batch_size: int | None = None,
+        batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -300,8 +300,8 @@ class MidjourneyClient:
         """Generate an animation from image files.
 
         Modes:
-        - Single image (end_image=None):  ``vid_1.1_i2v``, default batch_size=server default (4)
-        - Start+end (end_image=<file/URL>): ``vid_1.1_i2v_start_end``, default batch_size=1
+        - Single image (end_image=None):    ``vid_1.1_i2v``
+        - Start+end (end_image=<file/URL>): ``vid_1.1_i2v_start_end``
         - Start+loop (end_image="loop"):    ``vid_1.1_i2v_start_end``, ``--motion {motion}``
 
         Args:
@@ -309,8 +309,7 @@ class MidjourneyClient:
             end_image: Local file/URL for end frame, "loop" for loop mode, or None.
             motion: Motion intensity ("low" or "high"). Required when end_image="loop".
             prompt: Optional text prompt.
-            batch_size: Number of video variants (``--bs N``).
-                        Defaults to None (server default=4) for single-image; 1 for start+end/loop.
+            batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
@@ -341,7 +340,7 @@ class MidjourneyClient:
         self,
         job_id: str,
         *,
-        batch_size: int | None = 1,
+        batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,
@@ -376,7 +375,7 @@ class MidjourneyClient:
         job_id: str,
         *,
         motion: str | None = None,
-        batch_size: int | None = 1,
+        batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
         poll_interval: float = 5,

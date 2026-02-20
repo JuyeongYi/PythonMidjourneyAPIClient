@@ -337,7 +337,7 @@ class MidjourneyAPI:
         job_id: str,
         index: int,
         prompt: str = "",
-        batch_size: int | None = 1,
+        batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -357,8 +357,7 @@ class MidjourneyAPI:
         parts = []
         if prompt:
             parts.append(prompt)
-        if batch_size is not None:
-            parts.append(f"--bs {batch_size}")
+        parts.append(f"--bs {batch_size}")
         parts.append("--video 1")
         full_prompt = " ".join(parts)
 
@@ -386,7 +385,7 @@ class MidjourneyAPI:
         end_url: str | None = None,
         motion: str | None = None,
         prompt: str = "",
-        batch_size: int | None = None,
+        batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -395,73 +394,63 @@ class MidjourneyAPI:
 
         Modes:
         - Single image (end_url=None):  ``vid_1.1_i2v_{res}``, ``animateMode=manual``
-        - Start+end (end_url=<url>):    ``vid_1.1_i2v_start_end_{res}``, ``--bs 1``
-        - Start+loop (end_url="loop"):  ``vid_1.1_i2v_start_end_{res}``, ``--bs 1 --motion {motion}``
+        - Start+end (end_url=<url>):    ``vid_1.1_i2v_start_end_{res}``
+        - Start+loop (end_url="loop"):  ``vid_1.1_i2v_start_end_{res}``, ``--motion {motion}``
 
         Args:
             start_url: CDN URL of the start frame image.
             end_url: CDN URL of end frame, "loop" for looping, or None for single-image mode.
             motion: Motion intensity ("low" or "high"). Used with end_url="loop".
             prompt: Optional text prompt.
-            batch_size: Number of video variants (``--bs N``).
-                        Defaults to None (server default=4) for single-image; 1 for start+end/loop.
+            batch_size: Number of video variants (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
 
+        parts = [start_url]
+        if prompt:
+            parts.append(prompt)
+        parts.append(f"--bs {batch_size}")
         if end_url is None:
-            # Single-image mode: vid_1.1_i2v, no --bs by default
-            parts = [start_url]
-            if prompt:
-                parts.append(prompt)
-            if batch_size is not None:
-                parts.append(f"--bs {batch_size}")
             parts.append("--video 1")
-            full_prompt = " ".join(parts)
-            payload = self._video_payload(
-                video_type=f"vid_1.1_i2v_{resolution}",
-                new_prompt=full_prompt,
-                parent_job=None,
-                animate_mode="manual",
-                mode=mode,
-                private=private,
-            )
+            video_type = f"vid_1.1_i2v_{resolution}"
+            animate_mode = "manual"
+            parent_job = None
+            event_type = "video_diffusion"
         else:
-            # Start+end or start+loop: vid_1.1_i2v_start_end, --bs 1 default
-            effective_batch = batch_size if batch_size is not None else 1
-            parts = [start_url]
-            if prompt:
-                parts.append(prompt)
-            parts.append(f"--bs {effective_batch}")
             if motion and end_url == "loop":
                 parts.append(f"--motion {motion}")
             parts.append("--video 1")
             parts.append(f"--end {end_url}")
-            full_prompt = " ".join(parts)
-            payload = self._video_payload(
-                video_type=f"vid_1.1_i2v_start_end_{resolution}",
-                new_prompt=full_prompt,
-                parent_job=None,
-                animate_mode="manual",
-                mode=mode,
-                private=private,
-            )
+            video_type = f"vid_1.1_i2v_start_end_{resolution}"
+            animate_mode = "manual"
+            parent_job = None
+            event_type = "video_start_end"
+        full_prompt = " ".join(parts)
 
+        payload = self._video_payload(
+            video_type=video_type,
+            new_prompt=full_prompt,
+            parent_job=parent_job,
+            animate_mode=animate_mode,
+            mode=mode,
+            private=private,
+        )
         data = self._request("POST", "/api/submit-jobs", json=payload)
         return Job(
             id=self._extract_video_job_id(data),
             prompt=full_prompt,
             status="pending",
             user_id=self._auth.user_id,
-            event_type="video_start_end" if end_url is not None else "video_diffusion",
+            event_type=event_type,
         )
 
     def submit_loop_from_job(
         self,
         job_id: str,
-        batch_size: int | None = 1,
+        batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -478,10 +467,7 @@ class MidjourneyAPI:
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
-        parts = []
-        if batch_size is not None:
-            parts.append(f"--bs {batch_size}")
-        parts.extend(["--video 1", "--end loop"])
+        parts = [f"--bs {batch_size}", "--video 1", "--end loop"]
         full_prompt = " ".join(parts)
         payload = self._video_payload(
             video_type=f"vid_1.1_i2v_start_end_{resolution}",
@@ -505,7 +491,7 @@ class MidjourneyAPI:
         self,
         job_id: str,
         motion: str | None = None,
-        batch_size: int | None = 1,
+        batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
@@ -521,9 +507,7 @@ class MidjourneyAPI:
             private: Whether to make the job private.
         """
         self._check_resolution(resolution)
-        parts = []
-        if batch_size is not None:
-            parts.append(f"--bs {batch_size}")
+        parts = [f"--bs {batch_size}"]
         if motion:
             parts.append(f"--motion {motion}")
         parts.append("--video 1")
