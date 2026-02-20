@@ -5,6 +5,7 @@ from __future__ import annotations
 import json as json_mod
 import logging
 import mimetypes
+import time
 from pathlib import Path
 from typing import Any
 
@@ -31,9 +32,16 @@ class MidjourneyAPI:
     CDN_BASE = "https://cdn.midjourney.com/u"
     DIRECTION_MAP = {"up": 2, "right": 1, "down": 0, "left": 3}
 
-    def __init__(self, auth: MidjourneyAuth):
+    def __init__(
+        self,
+        auth: MidjourneyAuth,
+        max_retries: int = 3,
+        retry_backoff: float = 2.0,
+    ):
         self._auth = auth
         self._session = curl_requests.Session(impersonate="chrome")
+        self._max_retries = max_retries
+        self._retry_backoff = retry_backoff
 
     def close(self) -> None:
         self._session.close()
@@ -59,9 +67,42 @@ class MidjourneyAPI:
             headers["Content-Type"] = "application/json"
             kwargs["data"] = json_mod.dumps(json_body)
 
-        resp = self._session.request(
-            method, url, headers=headers, timeout=30, **kwargs
-        )
+        last_exc: Exception | None = None
+        resp = None
+        for attempt in range(self._max_retries + 1):
+            if attempt > 0:
+                wait = self._retry_backoff * (2 ** (attempt - 1))
+                logger.debug("Retry %d/%d after %.1fs", attempt, self._max_retries, wait)
+                time.sleep(wait)
+            try:
+                resp = self._session.request(
+                    method, url, headers=headers, timeout=30, **kwargs
+                )
+            except Exception as e:
+                last_exc = e
+                logger.debug("Network error (attempt %d): %s", attempt + 1, e)
+                continue
+
+            if resp.status_code == 429:
+                retry_after = float(resp.headers.get("Retry-After", self._retry_backoff))
+                logger.debug("429 Rate limited, waiting %.1fs", retry_after)
+                time.sleep(retry_after)
+                last_exc = None
+                continue
+            if resp.status_code >= 500 and attempt < self._max_retries:
+                last_exc = None
+                continue
+            last_exc = None
+            break
+
+        if last_exc:
+            raise MidjourneyError(
+                f"Request failed after {self._max_retries} retries: {last_exc}"
+            ) from last_exc
+
+        if resp is None:
+            raise MidjourneyError("Request failed: no response received")
+
         if resp.status_code >= 400:
             cookie_hdr = self._auth.cookie_header()
             logger.debug("%s %s → %s", method, path, resp.status_code)

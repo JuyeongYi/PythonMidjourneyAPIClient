@@ -29,9 +29,15 @@ class MidjourneyClient:
         refresh_token: str | None = None,
         env_path: str = ".env",
         print_log: bool = False,
+        max_retries: int = 3,
+        retry_backoff: float = 2.0,
     ):
         self._auth = MidjourneyAuth(refresh_token=refresh_token, env_path=env_path)
-        self._api = MidjourneyAPI(self._auth)
+        self._max_retries = max_retries
+        self._retry_backoff = retry_backoff
+        self._api = MidjourneyAPI(
+            self._auth, max_retries=max_retries, retry_backoff=retry_backoff,
+        )
         self._print_log = print_log
 
     def _log(self, msg: str) -> None:
@@ -60,7 +66,11 @@ class MidjourneyClient:
         """
         self._auth.login(force=force)
         self._api.close()
-        self._api = MidjourneyAPI(self._auth)
+        self._api = MidjourneyAPI(
+            self._auth,
+            max_retries=self._max_retries,
+            retry_backoff=self._retry_backoff,
+        )
 
     def _upload_if_local(self, value: str) -> str:
         """If value is a local file path, upload and return CDN URL."""
