@@ -337,6 +337,7 @@ class MidjourneyAPI:
         job_id: str,
         index: int,
         prompt: str = "",
+        end_url: str | None = None,
         motion: str | None = None,
         batch_size: int = 1,
         resolution: str = "480",
@@ -349,6 +350,8 @@ class MidjourneyAPI:
             job_id: Completed imagine job ID to animate.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
+            end_url: CDN URL for the end frame. If provided, uses
+                     ``vid_1.1_i2v_start_end`` with ``--end {url}``.
             motion: Motion intensity ("low" or "high").
             batch_size: Number of video variants to generate (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
@@ -363,13 +366,23 @@ class MidjourneyAPI:
         if motion:
             parts.append(f"--motion {motion}")
         parts.append("--video 1")
-        full_prompt = " ".join(parts)
 
+        if end_url:
+            parts.append(f"--end {end_url}")
+            video_type = f"vid_1.1_i2v_start_end_{resolution}"
+            animate_mode = "manual"
+            event_type = "video_start_end"
+        else:
+            video_type = f"vid_1.1_i2v_{resolution}"
+            animate_mode = "auto"
+            event_type = "video_diffusion"
+
+        full_prompt = " ".join(parts)
         payload = self._video_payload(
-            video_type=f"vid_1.1_i2v_{resolution}",
+            video_type=video_type,
             new_prompt=full_prompt,
             parent_job={"job_id": job_id, "image_num": index},
-            animate_mode="auto",
+            animate_mode=animate_mode,
             mode=mode,
             private=private,
         )
@@ -380,7 +393,7 @@ class MidjourneyAPI:
             status="pending",
             user_id=self._auth.user_id,
             parent_id=job_id,
-            event_type="video_diffusion",
+            event_type=event_type,
         )
 
     def submit_animate_from_image(

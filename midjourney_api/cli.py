@@ -160,6 +160,7 @@ def cmd_animate(args: argparse.Namespace) -> None:
         job = client.animate(
             args.job_id, args.index,
             prompt=args.prompt,
+            end_image=args.end_image,
             motion=args.motion,
             batch_size=args.batch_size,
             resolution=args.resolution,
@@ -321,6 +322,8 @@ def main() -> None:
     p_animate.add_argument("job_id", help="Source imagine job ID")
     p_animate.add_argument("index", type=int, help="Image index (0-3)")
     p_animate.add_argument("-p", "--prompt", default="", help="Additional prompt text")
+    p_animate.add_argument("--end-image", default=None, dest="end_image",
+                           help="End frame (local file or URL); switches to start+end mode")
     p_animate.add_argument("--motion", choices=["low", "high"], default=None,
                            help="Motion intensity (low or high)")
     p_animate.add_argument("--batch-size", type=int, default=1, dest="batch_size",

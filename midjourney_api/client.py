@@ -250,6 +250,7 @@ class MidjourneyClient:
         index: int,
         *,
         prompt: str = "",
+        end_image: str | None = None,
         motion: str | None = None,
         batch_size: int = 1,
         resolution: str = "480",
@@ -265,6 +266,8 @@ class MidjourneyClient:
             job_id: Completed imagine job ID.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
+            end_image: Local file or URL for the end frame. If provided, uses
+                       ``vid_1.1_i2v_start_end`` with ``--end {url}``.
             motion: Motion intensity ("low" or "high").
             batch_size: Number of video variants to generate (``--bs N``). Default 1.
             resolution: Video resolution ('480' or '720').
@@ -277,9 +280,10 @@ class MidjourneyClient:
         Returns:
             Completed Job with video_url()/gif_url() available.
         """
+        end_url = self._upload_if_local(end_image) if end_image else None
         job = self._api.submit_animate(
-            job_id, index, prompt=prompt, motion=motion, batch_size=batch_size,
-            resolution=resolution, mode=mode, private=stealth,
+            job_id, index, prompt=prompt, end_url=end_url, motion=motion,
+            batch_size=batch_size, resolution=resolution, mode=mode, private=stealth,
         )
         self._log(f"Animate submitted: {job.id}")
 
