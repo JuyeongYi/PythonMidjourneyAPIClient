@@ -76,6 +76,13 @@ class MidjourneyAuth:
                 timeout=15,
             )
             resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400:
+                raise AuthenticationError(
+                    "Session expired or revoked (often caused by logging in from a new device). "
+                    "Run `midjourney login --force` to re-authenticate."
+                ) from e
+            raise AuthenticationError(f"Token refresh failed: {e}") from e
         except httpx.HTTPError as e:
             raise AuthenticationError(f"Token refresh failed: {e}") from e
 
@@ -111,11 +118,12 @@ class MidjourneyAuth:
             f"{REFRESH_COOKIE_NAME}={self._refresh_token}"
         )
 
-    def login(self) -> None:
+    def login(self, force: bool = False) -> None:
         """Open a browser for Google OAuth login and extract the refresh token.
 
-        Requires playwright and chromium to be installed:
-            pip install playwright && playwright install chromium
+        Args:
+            force: If True, clear the cached browser session before opening
+                   the browser. Use this to switch accounts.
         """
         try:
             from playwright.sync_api import sync_playwright
@@ -125,11 +133,17 @@ class MidjourneyAuth:
                 "Install with: pip install playwright && playwright install chromium"
             )
 
+        user_data_path = Path.home() / ".midjourney_browser"
+        if force and user_data_path.exists():
+            import shutil
+            shutil.rmtree(user_data_path)
+            print("Cleared browser session for fresh login.")
+
         print("Opening browser for Midjourney login...")
         print("Please sign in with your Google account.")
 
         with sync_playwright() as p:
-            user_data = str(Path.home() / ".midjourney_browser")
+            user_data = str(user_data_path)
             context = p.chromium.launch_persistent_context(
                 user_data_dir=user_data,
                 channel="chrome",

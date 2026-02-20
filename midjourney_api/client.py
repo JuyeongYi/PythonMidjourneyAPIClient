@@ -51,9 +51,14 @@ class MidjourneyClient:
     def user_id(self) -> str:
         return self._auth.user_id
 
-    def login(self) -> None:
-        """Open browser for Google OAuth login."""
-        self._auth.login()
+    def login(self, force: bool = False) -> None:
+        """Open browser for Google OAuth login.
+
+        Args:
+            force: If True, clear the cached browser session before opening.
+                   Use this to switch accounts.
+        """
+        self._auth.login(force=force)
         self._api.close()
         self._api = MidjourneyAPI(self._auth)
 
