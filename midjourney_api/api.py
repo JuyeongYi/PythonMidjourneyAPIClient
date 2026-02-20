@@ -294,6 +294,16 @@ class MidjourneyAPI:
 
     # -- Animation methods ------------------------------------------------
 
+    _VALID_VIDEO_RESOLUTIONS = frozenset({"480", "720"})
+
+    def _check_resolution(self, resolution: str) -> None:
+        if resolution not in self._VALID_VIDEO_RESOLUTIONS:
+            from midjourney_api.exceptions import MidjourneyError
+            raise MidjourneyError(
+                f"Unsupported video resolution '{resolution}'. "
+                f"Must be one of: {sorted(self._VALID_VIDEO_RESOLUTIONS)}"
+            )
+
     def _video_payload(
         self,
         video_type: str,
@@ -343,10 +353,11 @@ class MidjourneyAPI:
             job_id: Completed imagine job ID to animate.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
-            resolution: Video resolution ('480'). Future: '720'.
+            resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
+        self._check_resolution(resolution)
         payload = self._video_payload(
             video_type=f"vid_1.1_i2v_{resolution}",
             new_prompt=prompt,
@@ -387,10 +398,11 @@ class MidjourneyAPI:
             end_url: CDN URL of end frame, "loop" for looping, or None for start-only.
             motion: Motion intensity ("low" or "high"). Used with end_url="loop".
             prompt: Optional text prompt.
-            resolution: Video resolution ('480'). Future: '720'.
+            resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
+        self._check_resolution(resolution)
         parts = [start_url]
         if prompt:
             parts.append(prompt)
@@ -432,10 +444,11 @@ class MidjourneyAPI:
 
         Args:
             job_id: Completed video job ID to loop.
-            resolution: Video resolution ('480'). Future: '720'.
+            resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
+        self._check_resolution(resolution)
         full_prompt = "--bs 1 --video 1 --end loop"
         payload = self._video_payload(
             video_type=f"vid_1.1_i2v_start_end_{resolution}",
@@ -468,10 +481,11 @@ class MidjourneyAPI:
         Args:
             job_id: Completed video job ID to extend.
             motion: Motion intensity ("low" or "high").
-            resolution: Video resolution ('480'). Future: '720'.
+            resolution: Video resolution ('480' or '720').
             mode: Speed mode ('fast', 'relax', 'turbo').
             private: Whether to make the job private.
         """
+        self._check_resolution(resolution)
         parts = ["--bs 1"]
         if motion:
             parts.append(f"--motion {motion}")

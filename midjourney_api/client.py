@@ -261,7 +261,7 @@ class MidjourneyClient:
             job_id: Completed imagine job ID.
             index: Image index within the grid (0-3).
             prompt: Optional additional prompt text.
-            resolution: Video resolution ('480').
+            resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
@@ -304,7 +304,7 @@ class MidjourneyClient:
             end_image: Local file/URL for end frame, "loop" for loop mode, or None.
             motion: Motion intensity ("low" or "high"). Required when end_image="loop".
             prompt: Optional text prompt.
-            resolution: Video resolution ('480').
+            resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
@@ -344,7 +344,7 @@ class MidjourneyClient:
 
         Args:
             job_id: Completed video job ID.
-            resolution: Video resolution ('480').
+            resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
@@ -378,7 +378,7 @@ class MidjourneyClient:
         Args:
             job_id: Completed video job ID to extend.
             motion: Motion intensity ("low" or "high").
-            resolution: Video resolution ('480').
+            resolution: Video resolution ('480' or '720').
             wait: If True, poll until the job completes.
             poll_interval: Seconds between status polls.
             timeout: Maximum seconds to wait.
