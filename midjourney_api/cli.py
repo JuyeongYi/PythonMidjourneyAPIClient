@@ -152,6 +152,7 @@ def cmd_animate(args: argparse.Namespace) -> None:
         job = client.animate(
             args.job_id, args.index,
             prompt=args.prompt,
+            batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
         )
@@ -170,6 +171,7 @@ def cmd_animate_from_image(args: argparse.Namespace) -> None:
             args.end_image,
             motion=args.motion,
             prompt=args.prompt,
+            batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
         )
@@ -185,6 +187,7 @@ def cmd_loop_video(args: argparse.Namespace) -> None:
     with MidjourneyClient(env_path=args.env, print_log=True) as client:
         job = client.loop_video(
             args.job_id,
+            batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
         )
@@ -201,6 +204,7 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
         job = client.extend_video(
             args.job_id,
             motion=args.motion,
+            batch_size=args.batch_size,
             resolution=args.resolution,
             mode=args.mode,
         )
@@ -311,6 +315,8 @@ def main() -> None:
     p_animate.add_argument("job_id", help="Source imagine job ID")
     p_animate.add_argument("index", type=int, help="Image index (0-3)")
     p_animate.add_argument("-p", "--prompt", default="", help="Additional prompt text")
+    p_animate.add_argument("--batch-size", type=int, default=1, dest="batch_size",
+                           help="Number of video variants to generate (default: 1)")
     p_animate.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_animate.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
     p_animate.add_argument("-o", "--output", default="./videos", help="Output directory")
@@ -324,6 +330,8 @@ def main() -> None:
     p_afi.add_argument("--motion", choices=["low", "high"], default=None,
                        help="Motion intensity (required for loop mode)")
     p_afi.add_argument("-p", "--prompt", default="", help="Text prompt")
+    p_afi.add_argument("--batch-size", type=int, default=1, dest="batch_size",
+                       help="Number of video variants to generate (default: 1)")
     p_afi.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_afi.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
     p_afi.add_argument("-o", "--output", default="./videos", help="Output directory")
@@ -332,6 +340,8 @@ def main() -> None:
     # loop-video (loop from existing video job)
     p_loop = sub.add_parser("loop-video", help="Create a looping version of a video job")
     p_loop.add_argument("job_id", help="Source video job ID")
+    p_loop.add_argument("--batch-size", type=int, default=1, dest="batch_size",
+                        help="Number of video variants to generate (default: 1)")
     p_loop.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_loop.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
     p_loop.add_argument("-o", "--output", default="./videos", help="Output directory")
@@ -342,6 +352,8 @@ def main() -> None:
     p_ext.add_argument("job_id", help="Source video job ID")
     p_ext.add_argument("--motion", choices=["low", "high"], default=None,
                        help="Motion intensity (low or high)")
+    p_ext.add_argument("--batch-size", type=int, default=1, dest="batch_size",
+                       help="Number of video variants to generate (default: 1)")
     p_ext.add_argument("--resolution", default="480", help="Video resolution (default: 480)")
     p_ext.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
     p_ext.add_argument("-o", "--output", default="./videos", help="Output directory")

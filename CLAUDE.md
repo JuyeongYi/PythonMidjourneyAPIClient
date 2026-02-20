@@ -1,5 +1,11 @@
 # Midjourney Python API Client
 
+## Claude Code 규칙
+
+- **`uv run python` 금지** — WSL 환경에서 Windows `.venv`를 덮어쓰므로 절대 사용하지 말 것
+- 테스트는 사용자가 Windows에서 직접 실행 — WSL에서 `.venv` 건드리지 말 것
+- 코드 검증은 `Grep`, `Read` 도구로 정적 확인만 수행
+
 Unofficial Python client for the Midjourney image generation API, reverse-engineered from midjourney.com.
 
 ## Setup
