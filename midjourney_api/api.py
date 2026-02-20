@@ -292,6 +292,210 @@ class MidjourneyAPI:
             mode=mode, private=private,
         )
 
+    # -- Animation methods ------------------------------------------------
+
+    def _video_payload(
+        self,
+        video_type: str,
+        new_prompt: str,
+        parent_job: dict | None,
+        animate_mode: str,
+        mode: str,
+        private: bool,
+    ) -> dict:
+        """Build common video submit payload."""
+        return {
+            "t": "video",
+            "videoType": video_type,
+            "newPrompt": new_prompt,
+            "parentJob": parent_job,
+            "animateMode": animate_mode,
+            "channelId": f"singleplayer_{self._auth.user_id}",
+            "f": {"mode": mode, "private": private},
+            "roomId": None,
+            "metadata": {
+                "isMobile": None, "imagePrompts": None,
+                "imageReferences": None, "characterReferences": None,
+                "depthReferences": None, "lightboxOpen": None,
+            },
+        }
+
+    def _extract_video_job_id(self, data: Any) -> str:
+        """Extract job_id from /api/submit-jobs video response."""
+        if isinstance(data, dict):
+            success = data.get("success", [])
+            if success:
+                return success[0].get("job_id", "")
+        return ""
+
+    def submit_animate(
+        self,
+        job_id: str,
+        index: int,
+        prompt: str = "",
+        resolution: str = "480",
+        mode: str = "fast",
+        private: bool = False,
+    ) -> Job:
+        """Submit an Image-to-Video animation job from an imagine result.
+
+        Args:
+            job_id: Completed imagine job ID to animate.
+            index: Image index within the grid (0-3).
+            prompt: Optional additional prompt text.
+            resolution: Video resolution ('480'). Future: '720'.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+            private: Whether to make the job private.
+        """
+        payload = self._video_payload(
+            video_type=f"vid_1.1_i2v_{resolution}",
+            new_prompt=prompt,
+            parent_job={"job_id": job_id, "image_num": index},
+            animate_mode="auto",
+            mode=mode,
+            private=private,
+        )
+        data = self._request("POST", "/api/submit-jobs", json=payload)
+        return Job(
+            id=self._extract_video_job_id(data),
+            prompt=prompt,
+            status="pending",
+            user_id=self._auth.user_id,
+            parent_id=job_id,
+            event_type="video_diffusion",
+        )
+
+    def submit_animate_from_image(
+        self,
+        start_url: str,
+        end_url: str | None = None,
+        motion: str | None = None,
+        prompt: str = "",
+        resolution: str = "480",
+        mode: str = "fast",
+        private: bool = False,
+    ) -> Job:
+        """Submit an animation from image files.
+
+        Three modes depending on end_url and motion:
+        - start only:   end_url=None
+        - start+end:    end_url=<cdn url>
+        - start+loop:   end_url="loop", motion="low"|"high"
+
+        Args:
+            start_url: CDN URL of the start frame image.
+            end_url: CDN URL of end frame, "loop" for looping, or None for start-only.
+            motion: Motion intensity ("low" or "high"). Used with end_url="loop".
+            prompt: Optional text prompt.
+            resolution: Video resolution ('480'). Future: '720'.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+            private: Whether to make the job private.
+        """
+        parts = [start_url]
+        if prompt:
+            parts.append(prompt)
+        parts.append("--bs 1")
+        if motion and end_url == "loop":
+            parts.append(f"--motion {motion}")
+        parts.append("--video 1")
+        if end_url:
+            parts.append(f"--end {end_url}")
+        full_prompt = " ".join(parts)
+
+        payload = self._video_payload(
+            video_type=f"vid_1.1_i2v_start_end_{resolution}",
+            new_prompt=full_prompt,
+            parent_job=None,
+            animate_mode="manual",
+            mode=mode,
+            private=private,
+        )
+        data = self._request("POST", "/api/submit-jobs", json=payload)
+        return Job(
+            id=self._extract_video_job_id(data),
+            prompt=full_prompt,
+            status="pending",
+            user_id=self._auth.user_id,
+            event_type="video_start_end",
+        )
+
+    def submit_loop_from_job(
+        self,
+        job_id: str,
+        resolution: str = "480",
+        mode: str = "fast",
+        private: bool = False,
+    ) -> Job:
+        """Submit a looping video from an existing video job.
+
+        Uses videoType vid_1.1_i2v_start_end with parentJob and --end loop.
+
+        Args:
+            job_id: Completed video job ID to loop.
+            resolution: Video resolution ('480'). Future: '720'.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+            private: Whether to make the job private.
+        """
+        full_prompt = "--bs 1 --video 1 --end loop"
+        payload = self._video_payload(
+            video_type=f"vid_1.1_i2v_start_end_{resolution}",
+            new_prompt=full_prompt,
+            parent_job={"job_id": job_id, "image_num": 0},
+            animate_mode="manual",
+            mode=mode,
+            private=private,
+        )
+        data = self._request("POST", "/api/submit-jobs", json=payload)
+        return Job(
+            id=self._extract_video_job_id(data),
+            prompt=full_prompt,
+            status="pending",
+            user_id=self._auth.user_id,
+            parent_id=job_id,
+            event_type="video_start_end",
+        )
+
+    def submit_extend_video(
+        self,
+        job_id: str,
+        motion: str | None = None,
+        resolution: str = "480",
+        mode: str = "fast",
+        private: bool = False,
+    ) -> Job:
+        """Extend an existing video job.
+
+        Args:
+            job_id: Completed video job ID to extend.
+            motion: Motion intensity ("low" or "high").
+            resolution: Video resolution ('480'). Future: '720'.
+            mode: Speed mode ('fast', 'relax', 'turbo').
+            private: Whether to make the job private.
+        """
+        parts = ["--bs 1"]
+        if motion:
+            parts.append(f"--motion {motion}")
+        parts.append("--video 1")
+        full_prompt = " ".join(parts)
+
+        payload = self._video_payload(
+            video_type=f"vid_1.1_i2v_extend_{resolution}",
+            new_prompt=full_prompt,
+            parent_job={"job_id": job_id, "image_num": 0},
+            animate_mode="auto",
+            mode=mode,
+            private=private,
+        )
+        data = self._request("POST", "/api/submit-jobs", json=payload)
+        return Job(
+            id=self._extract_video_job_id(data),
+            prompt=full_prompt,
+            status="pending",
+            user_id=self._auth.user_id,
+            parent_id=job_id,
+            event_type="video_extended",
+        )
+
     # -- Job status & listing ----------------------------------------------
 
     def get_job_status(self, job_id: str) -> Job | None:
