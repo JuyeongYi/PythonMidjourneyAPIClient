@@ -26,7 +26,7 @@ def cmd_login(args: argparse.Namespace) -> None:
     from midjourney_api.client import MidjourneyClient
 
     client = MidjourneyClient(env_path=args.env)
-    client.login()
+    client.login(force=args.force)
     client.close()
 
 
@@ -162,7 +162,12 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     # login
-    sub.add_parser("login", help="Login via browser (Playwright)")
+    p_login = sub.add_parser("login", help="Login via browser (Playwright)")
+    p_login.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Clear cached browser session before login (use to switch accounts)",
+    )
 
     # imagine
     p_imagine = sub.add_parser("imagine", help="Generate images from a prompt")
