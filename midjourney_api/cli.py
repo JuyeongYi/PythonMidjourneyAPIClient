@@ -212,6 +212,7 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
         job = client.extend_video(
             args.job_id,
             args.index,
+            prompt=args.prompt or "",
             end_image=args.end_image,
             motion=args.motion,
             batch_size=args.batch_size,
@@ -365,6 +366,7 @@ def main() -> None:
     p_ext = sub.add_parser("extend-video", help="Extend an existing video job (or make it loop)")
     p_ext.add_argument("job_id", help="Source video job ID")
     p_ext.add_argument("index", type=int, nargs="?", default=0, help="Batch variant index (default: 0)")
+    p_ext.add_argument("-p", "--prompt", default=None, help="Text prompt to guide the extension")
     p_ext.add_argument("--end-image", default=None, dest="end_image",
                        help="End frame (local file, URL, or 'loop' for seamless loop)")
     p_ext.add_argument("--motion", choices=["low", "high"], default=None,

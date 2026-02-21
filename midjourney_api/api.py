@@ -474,6 +474,7 @@ class MidjourneyAPI:
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
+        prompt: str = "",
     ) -> Job:
         """Extend an existing video job.
 
@@ -495,7 +496,10 @@ class MidjourneyAPI:
         self._check_resolution(resolution)
 
         if end_url:
-            parts = [f"--bs {batch_size}"]
+            parts = []
+            if prompt:
+                parts.append(prompt)
+            parts.append(f"--bs {batch_size}")
             if motion:
                 parts.append(f"--motion {motion}")
             parts.append("--video 1")
@@ -511,7 +515,10 @@ class MidjourneyAPI:
             )
             event_type = "video_start_end"
         else:
-            parts = [f"--bs {batch_size}"]
+            parts = []
+            if prompt:
+                parts.append(prompt)
+            parts.append(f"--bs {batch_size}")
             if motion:
                 parts.append(f"--motion {motion}")
             parts.append("--video 1")

@@ -361,12 +361,14 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
         stealth: bool = False,
+        prompt: str = "",
     ) -> Job:
         """Extend a completed video job.
 
         Args:
             job_id: Completed video job ID to extend.
             index: Batch variant index to extend (default 0).
+            prompt: Optional text prompt to guide the extension direction.
             end_image: End frame (local file/URL) or "loop" for seamless loop.
                        None = just extend. Switches to vid_1.1_i2v_start_end mode.
             motion: Motion intensity ("low" or "high").
@@ -388,6 +390,7 @@ class MidjourneyClient:
         job = self._api.submit_extend_video(
             job_id, index=index, end_url=end_url, motion=motion,
             batch_size=batch_size, resolution=resolution, mode=mode, private=stealth,
+            prompt=prompt,
         )
         self._log(f"Extend video submitted: {job.id}")
 
