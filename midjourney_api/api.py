@@ -112,32 +112,62 @@ class MidjourneyAPI:
         """로컬 이미지 파일을 업로드하고 CDN URL을 반환합니다.
 
         /api/storage-upload-file에 multipart/form-data 형식으로 업로드합니다.
+        네트워크 오류와 5xx 응답에 대해 max_retries 횟수만큼 재시도합니다.
         """
-        self._auth.ensure_valid_token()
-
         path = Path(file_path).resolve()
         content_type = mimetypes.guess_type(str(path))[0] or "image/png"
-        mp = CurlMime()
-        mp.addpart(
-            name="file",
-            filename=path.name,
-            local_path=str(path),
-            content_type=content_type,
-        )
-
         url = f"{BASE_URL}/api/storage-upload-file"
-        headers = {
-            "x-csrf-protection": "1",
-            "Cookie": self._auth.cookie_header(),
-            "Origin": BASE_URL,
-            "Referer": f"{BASE_URL}/imagine",
-        }
-        resp = self._session.post(
-            url,
-            headers=headers,
-            multipart=mp,
-            timeout=60,
-        )
+
+        last_exc: Exception | None = None
+        resp = None
+        for attempt in range(self._max_retries + 1):
+            if attempt > 0:
+                wait = self._retry_backoff * (2 ** (attempt - 1))
+                logger.debug("Upload retry %d/%d after %.1fs", attempt, self._max_retries, wait)
+                time.sleep(wait)
+
+            self._auth.ensure_valid_token()
+            headers = {
+                "x-csrf-protection": "1",
+                "Cookie": self._auth.cookie_header(),
+                "Origin": BASE_URL,
+                "Referer": f"{BASE_URL}/imagine",
+            }
+            # CurlMime는 일회성이므로 재시도마다 새로 생성합니다
+            mp = CurlMime()
+            mp.addpart(
+                name="file",
+                filename=path.name,
+                local_path=str(path),
+                content_type=content_type,
+            )
+            try:
+                resp = self._session.post(url, headers=headers, multipart=mp, timeout=60)
+            except Exception as e:
+                last_exc = e
+                logger.debug("Upload network error (attempt %d): %s", attempt + 1, e)
+                continue
+
+            if resp.status_code == 429:
+                retry_after = float(resp.headers.get("Retry-After", self._retry_backoff))
+                logger.debug("Upload 429 Rate limited, waiting %.1fs", retry_after)
+                time.sleep(retry_after)
+                last_exc = None
+                continue
+            if resp.status_code >= 500 and attempt < self._max_retries:
+                last_exc = None
+                continue
+            last_exc = None
+            break
+
+        if last_exc:
+            raise MidjourneyError(
+                f"Upload failed after {self._max_retries} retries: {last_exc}"
+            ) from last_exc
+
+        if resp is None:
+            raise MidjourneyError("Upload failed: no response received")
+
         if resp.status_code >= 400:
             logger.debug("POST /api/storage-upload-file → %s", resp.status_code)
             logger.debug("Response: %s", resp.text[:500])
@@ -400,8 +430,8 @@ class MidjourneyAPI:
         self,
         start_url: str,
         end_url: str | None = None,
-        motion: str | None = None,
         prompt: str = "",
+        motion: str | None = None,
         batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
@@ -417,8 +447,8 @@ class MidjourneyAPI:
         매개변수:
             start_url: 시작 프레임 이미지의 CDN URL.
             end_url: 끝 프레임의 CDN URL, 루프는 "loop", 단일 이미지 모드는 None.
-            motion: 모션 강도 ("low" 또는 "high"). end_url="loop"일 때 사용.
             prompt: 선택적 텍스트 프롬프트.
+            motion: 모션 강도 ("low" 또는 "high"). end_url="loop"일 때 사용.
             batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
             resolution: 비디오 해상도 ('480' 또는 '720').
             mode: 속도 모드 ('fast', 'relax', 'turbo').
@@ -468,9 +498,9 @@ class MidjourneyAPI:
         self,
         job_id: str,
         index: int = 0,
+        prompt: str = "",
         end_url: str | None = None,
         motion: str | None = None,
-        prompt: str = "",
         batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
@@ -486,9 +516,9 @@ class MidjourneyAPI:
         매개변수:
             job_id: 연장할 완료된 비디오 작업 ID.
             index: 연장할 배치 변형 인덱스 (기본값 0).
+            prompt: 선택적 추가 프롬프트 텍스트.
             end_url: 끝 프레임 URL, 매끄러운 루프는 "loop", 단순 연장은 None.
             motion: 모션 강도 ("low" 또는 "high").
-            prompt: 선택적 추가 프롬프트 텍스트.
             batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
             resolution: 비디오 해상도 ('480' 또는 '720').
             mode: 속도 모드 ('fast', 'relax', 'turbo').

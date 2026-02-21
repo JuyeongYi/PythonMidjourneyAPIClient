@@ -11,7 +11,7 @@ from curl_cffi import requests as curl_requests
 from midjourney_api.api import MidjourneyAPI
 from midjourney_api.auth import MidjourneyAuth
 from midjourney_api.const import UpscaleType
-from midjourney_api.exceptions import MidjourneyError
+from midjourney_api.exceptions import JobFailedError, MidjourneyError
 from midjourney_api.models import Job, UserSettings
 from midjourney_api.params import create_params
 
@@ -159,7 +159,7 @@ class MidjourneyClient:
     def _poll_job(
         self, job_id: str, interval: float, timeout: float
     ) -> Job:
-        """/api/imagine을 작업이 나타날 때까지 폴링합니다 (= 완료)."""
+        """/api/imagine을 작업이 나타날 때까지 폴링합니다 (= 완료 또는 실패)."""
         start = time.time()
         self._log("  Waiting for completion...")
 
@@ -167,8 +167,8 @@ class MidjourneyClient:
             job = self._api.get_job_status(job_id)
 
             if job is not None:
-                job.status = "completed"
-                job.progress = 100
+                if job.is_failed:
+                    raise JobFailedError(job_id)
                 if job.id:
                     job.image_urls = [job.cdn_url(i) for i in range(4)]
                 self._log("  Completed!")
@@ -189,7 +189,24 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """생성된 이미지의 변형을 생성합니다."""
+        """생성된 이미지의 변형을 생성합니다.
+
+        매개변수:
+            job_id: 완료된 imagine 작업 ID.
+            index: 변형할 그리드 이미지 인덱스 (0-3).
+            strong: True이면 Strong, False이면 Subtle 변형을 생성합니다.
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+
+        반환값:
+            결과가 담긴 Job 객체.
+
+        예외:
+            JobFailedError: 작업이 실패한 경우.
+            MidjourneyError: 타임아웃 또는 기타 오류 발생 시.
+        """
         job = self._api.submit_vary(job_id, index, strong=strong, mode=mode)
         label = "Strong" if strong else "Subtle"
         self._log(f"Vary ({label}) submitted: {job.id}")
@@ -209,7 +226,24 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """생성된 이미지를 업스케일합니다."""
+        """생성된 이미지를 업스케일합니다.
+
+        매개변수:
+            job_id: 완료된 imagine 작업 ID.
+            index: 업스케일할 그리드 이미지 인덱스 (0-3).
+            upscale_type: 업스케일 방식 ('v7_2x_subtle' 또는 'v7_2x_creative').
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+
+        반환값:
+            업스케일된 이미지가 담긴 Job 객체 (image_urls[0]에 결과).
+
+        예외:
+            JobFailedError: 작업이 실패한 경우.
+            MidjourneyError: 타임아웃 또는 기타 오류 발생 시.
+        """
         job = self._api.submit_upscale(
             job_id, index, upscale_type=upscale_type, mode=mode,
         )
@@ -234,7 +268,25 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """이미지를 특정 방향으로 팬(확장)합니다."""
+        """이미지를 특정 방향으로 팬(확장)합니다.
+
+        매개변수:
+            job_id: 완료된 imagine 작업 ID.
+            index: 팬할 그리드 이미지 인덱스 (0-3).
+            direction: 확장 방향 ('up', 'down', 'left', 'right').
+            prompt: 확장 방향을 안내하는 선택적 텍스트 프롬프트.
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+
+        반환값:
+            팬된 이미지가 담긴 Job 객체.
+
+        예외:
+            JobFailedError: 작업이 실패한 경우.
+            MidjourneyError: 타임아웃 또는 기타 오류 발생 시.
+        """
         job = self._api.submit_pan(
             job_id, index, direction=direction, prompt=prompt, mode=mode,
         )
@@ -388,9 +440,8 @@ class MidjourneyClient:
         else:
             end_url = end_image  # None 또는 'loop'
         job = self._api.submit_extend_video(
-            job_id, index=index, end_url=end_url, motion=motion,
+            job_id, index=index, prompt=prompt, end_url=end_url, motion=motion,
             batch_size=batch_size, resolution=resolution, mode=mode, private=stealth,
-            prompt=prompt,
         )
         self._log(f"Extend video submitted: {job.id}")
 

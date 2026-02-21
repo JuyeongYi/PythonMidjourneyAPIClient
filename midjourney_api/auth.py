@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -141,7 +142,6 @@ class MidjourneyAuth:
 
         user_data_path = Path.home() / ".midjourney_browser"
         if force and user_data_path.exists():
-            import shutil
             shutil.rmtree(user_data_path)
             print("Cleared browser session for fresh login.")
 
