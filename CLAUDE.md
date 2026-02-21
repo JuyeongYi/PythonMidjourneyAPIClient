@@ -24,6 +24,7 @@ uv run midjourney imagine "prompt" --image ./ref.png # Image prompt (upload)
 uv run midjourney imagine "prompt" --sref ./s.png    # Style reference (upload)
 uv run midjourney imagine "prompt" --oref ./c.png    # Object reference (upload)
 uv run midjourney vary <job_id> <index> [--subtle]                     # Vary (Strong/Subtle)
+uv run midjourney remix <job_id> <index> "new prompt" [--subtle] [--stealth]  # Remix with new prompt
 uv run midjourney upscale <job_id> <index> [--type]                    # Upscale (subtle/creative)
 uv run midjourney pan <job_id> <index> -d up                           # Pan (up/down/left/right)
 uv run midjourney animate <job_id> <index>                             # Animate from imagine grid
@@ -40,8 +41,8 @@ uv run midjourney download <job_id>                                    # Downloa
 
 ## Architecture
 
-- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, upscale, pan, animate, animate_from_image, extend_video, download
-- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_upscale`, `submit_pan`, `submit_animate`, `submit_animate_from_image`, `submit_extend_video`)
+- `midjourney_api/client.py` — High-level API (`MidjourneyClient`): imagine, vary, remix, upscale, pan, animate, animate_from_image, extend_video, download
+- `midjourney_api/api.py` — Low-level REST API wrapper (`upload_image`, `submit_job`, `submit_vary`, `submit_remix`, `submit_upscale`, `submit_pan`, `submit_animate`, `submit_animate_from_image`, `submit_extend_video`)
 - `midjourney_api/auth.py` — Firebase Auth / token refresh / Playwright browser login
 - `midjourney_api/models.py` — Dataclass models (`Job`, `UserSettings`)
 - `midjourney_api/params/types.py` — Custom types (`MJParam`, `_RangeInt`, `_Flag`, `_ModeEnum`, `SpeedMode`, `VisibilityMode`)
@@ -59,7 +60,8 @@ uv run midjourney download <job_id>                                    # Downloa
 - Authentication via Firebase refresh token in `.env`
 - All API calls require `x-csrf-protection: 1` header
 - Cookie name: `__Host-Midjourney.AuthUserTokenV3_i` (ID token)
-- All postprocess operations (vary/upscale/pan) share `/api/submit-jobs` endpoint, differentiated by `t` field
+- All postprocess operations (vary/remix/upscale/pan) share `/api/submit-jobs` endpoint, differentiated by `t` field
+- `remix(job_id, index, new_prompt, strong, stealth)` — vary + prompt change; submits to `/api/submit-jobs` (t=remix) then registers event via `/api/jobs-actions` (action: `"remix"` or `"remix_subtle"`)
 - Upscale is terminal — cannot pan/vary an upscaled result; must branch from a grid job
 - Image upload: `POST /api/storage-upload-file` (multipart) → CDN URL `https://cdn.midjourney.com/u/{bucketPathname}`
 - All 3 image reference types share the same upload flow: image prompt, sref, oref

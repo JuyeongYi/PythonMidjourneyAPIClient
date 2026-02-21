@@ -76,8 +76,7 @@ def cmd_imagine(args: argparse.Namespace) -> None:
             mode=args.mode,
             **_build_imagine_params(args),
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -105,8 +104,7 @@ def cmd_vary(args: argparse.Namespace) -> None:
             strong=(not args.subtle),
             mode=args.mode,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -122,8 +120,7 @@ def cmd_upscale(args: argparse.Namespace) -> None:
             upscale_type=type_map[args.type],
             mode=args.mode,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -139,8 +136,7 @@ def cmd_pan(args: argparse.Namespace) -> None:
             prompt=args.prompt or "",
             mode=args.mode,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -156,8 +152,7 @@ def cmd_remix(args: argparse.Namespace) -> None:
             mode=args.mode,
             stealth=args.stealth,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
             client.download_images(job, args.output, size=args.size)
 
@@ -177,8 +172,7 @@ def cmd_animate(args: argparse.Namespace) -> None:
             mode=args.mode,
             stealth=args.stealth,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
         for p in paths:
             print(f"Saved: {p}")
@@ -199,8 +193,7 @@ def cmd_animate_from_image(args: argparse.Namespace) -> None:
             mode=args.mode,
             stealth=args.stealth,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
         for p in paths:
             print(f"Saved: {p}")
@@ -222,8 +215,7 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
             mode=args.mode,
             stealth=args.stealth,
         )
-        if args.verbose:
-            print(f"Job ID: {job.id}")
+        print(f"Job ID: {job.id}")
         paths = client.download_video(job, output_dir=args.output, size=args.size, batch_size=args.batch_size)
         for p in paths:
             print(f"Saved: {p}")
