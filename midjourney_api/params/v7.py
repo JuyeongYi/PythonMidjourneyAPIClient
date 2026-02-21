@@ -179,7 +179,7 @@ class V7Params(BaseParams):
         if self.sref:
             parts.append(self.sref.to_prompt(v))
             parts.append((self.sw if self.sw is not None else StyleWeight(100)).to_prompt(v))
-        if self.sv is not None:
+        if self.sv is not None and v >= 7:
             if int(self.sv) == 8:
                 raise NotImplementedError("sv=8 is not yet supported by the Midjourney API")
             if not (v == 7 and int(self.sv) == 7):
