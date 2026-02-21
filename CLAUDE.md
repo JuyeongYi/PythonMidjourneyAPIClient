@@ -61,7 +61,7 @@ uv run midjourney download <job_id>                                    # Downloa
 - All API calls require `x-csrf-protection: 1` header
 - Cookie name: `__Host-Midjourney.AuthUserTokenV3_i` (ID token)
 - All postprocess operations (vary/remix/upscale/pan) share `/api/submit-jobs` endpoint, differentiated by `t` field
-- `remix(job_id, index, new_prompt, strong, stealth)` — vary + prompt change; submits to `/api/submit-jobs` (t=remix) then registers event via `/api/jobs-actions` (action: `"remix"` or `"remix_subtle"`)
+- `remix(job_id, index, prompt, strong, stealth, **params)` — vary + prompt change; imagine과 동일하게 `create_params()` + `_resolve_image_refs()`로 파라미터 처리 (ar/sref/oref 업로드 등 전체 지원); `/api/submit-jobs` (t=remix) 제출 후 `/api/jobs-actions` (action: `"remix"` or `"remix_subtle"`) 등록
 - Upscale is terminal — cannot pan/vary an upscaled result; must branch from a grid job
 - Image upload: `POST /api/storage-upload-file` (multipart) → CDN URL `https://cdn.midjourney.com/u/{bucketPathname}`
 - All 3 image reference types share the same upload flow: image prompt, sref, oref
