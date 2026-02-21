@@ -285,7 +285,7 @@ def main() -> None:
     p_imagine.add_argument("--sref", help="Style reference (local file, URL, or code)")
     p_imagine.add_argument("--sw", type=StyleWeight, help="Style weight: 0-1000, default 100")
     p_imagine.add_argument("--sv", type=StyleVersion, default=None,
-                           help="Style version: 1-4 (use 4 for old V7 style codes)")
+                           help="Style version: 4, 6, 7, 8 (sv=7+v7 omitted; sv=8 not yet supported)")
     p_imagine.add_argument("--oref", help="Object/character reference (local file or URL)")
     p_imagine.add_argument("--ow", type=OmniWeight, help="1-1000, default 100")
     p_imagine.add_argument("-p", "--personalize", nargs="?", const="", default=None,
