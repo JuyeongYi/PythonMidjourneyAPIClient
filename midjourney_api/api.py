@@ -470,11 +470,11 @@ class MidjourneyAPI:
         index: int = 0,
         end_url: str | None = None,
         motion: str | None = None,
+        prompt: str = "",
         batch_size: int = 1,
         resolution: str = "480",
         mode: str = "fast",
         private: bool = False,
-        prompt: str = "",
     ) -> Job:
         """기존 비디오 작업을 연장합니다.
 
@@ -488,6 +488,7 @@ class MidjourneyAPI:
             index: 연장할 배치 변형 인덱스 (기본값 0).
             end_url: 끝 프레임 URL, 매끄러운 루프는 "loop", 단순 연장은 None.
             motion: 모션 강도 ("low" 또는 "high").
+            prompt: 선택적 추가 프롬프트 텍스트.
             batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
             resolution: 비디오 해상도 ('480' 또는 '720').
             mode: 속도 모드 ('fast', 'relax', 'turbo').

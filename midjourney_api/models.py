@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
-
 from midjourney_api.const import CDN_VIDEO_BASE
 
 
@@ -18,9 +16,9 @@ class Job:
     progress: int = 0
     image_urls: list[str] = field(default_factory=list)
     user_id: str = ""
-    enqueue_time: Optional[str] = None
-    parent_id: Optional[str] = None
-    event_type: Optional[str] = None
+    enqueue_time: str | None = None
+    parent_id: str | None = None
+    event_type: str | None = None
 
     @property
     def is_completed(self) -> bool:
@@ -38,7 +36,7 @@ class Job:
     def video_url(self, index: int = 0, size: int | None = None) -> str:
         """비디오 파일의 CDN URL을 빌드합니다.
 
-        Args:
+        매개변수:
             index: 배치 인덱스 (batch_size=1이면 항상 0).
             size: 해상도 (예: 소셜용 1080). None = 원본 그대로.
         """
@@ -53,7 +51,7 @@ class Job:
     def cdn_url(self, index: int = 0, size: int = 640) -> str:
         """특정 이미지 변형의 CDN URL을 빌드합니다.
 
-        Args:
+        매개변수:
             index: 이미지 변형 인덱스 (그리드 이미지는 0-3).
             size: 이미지 크기 (예: 640, 1024).
         """
