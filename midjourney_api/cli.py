@@ -143,14 +143,22 @@ def cmd_pan(args: argparse.Namespace) -> None:
 
 def cmd_remix(args: argparse.Namespace) -> None:
     """remix 커맨드를 처리합니다."""
+    import sys
     from midjourney_api.client import MidjourneyClient
+
+    if args.version == 8:
+        print("Error: Version 8 is not yet implemented.", file=sys.stderr)
+        sys.exit(1)
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.remix(
             args.job_id, args.index, args.prompt,
             strong=(not args.subtle),
+            image=args.image,
+            version=args.version,
             mode=args.mode,
             stealth=args.stealth,
+            **_build_imagine_params(args),
         )
         print(f"Job ID: {job.id}")
         if job.is_completed and args.output:
@@ -327,10 +335,35 @@ def main() -> None:
     p_remix = sub.add_parser("remix", help="Remix an image with a new prompt")
     p_remix.add_argument("job_id", help="Parent job ID")
     p_remix.add_argument("index", type=int, help="Image index (0-3)")
-    p_remix.add_argument("prompt", help="New prompt text (full prompt including parameters)")
+    p_remix.add_argument("prompt", help="New prompt text")
     p_remix.add_argument("--subtle", action="store_true", help="Subtle remix (default: Strong)")
     p_remix.add_argument("--stealth", action="store_true", help="Generate in stealth mode")
-    p_remix.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_remix.add_argument("--image", help="Image prompt (local file or URL)")
+    p_remix.add_argument("--iw", type=ImageWeight, help="Image weight 0-3 (default 1)")  # type: ignore[arg-type]
+    p_remix.add_argument("--ar", type=AspectRatio, help="Aspect ratio (e.g., 16:9)")  # type: ignore[arg-type]
+    p_remix.add_argument("-s", "--stylize", type=Stylize, help="0-1000")  # type: ignore[arg-type]
+    p_remix.add_argument("-c", "--chaos", type=Chaos, help="0-100")  # type: ignore[arg-type]
+    p_remix.add_argument("-q", "--quality", type=Quality, help="1, 2, or 4")  # type: ignore[arg-type]
+    p_remix.add_argument("--seed", type=Seed, help="0-4294967295")  # type: ignore[arg-type]
+    p_remix.add_argument("-w", "--weird", type=Weird, help="0-3000")  # type: ignore[arg-type]
+    p_remix.add_argument("--stop", type=Stop, help="10-100")  # type: ignore[arg-type]
+    p_remix.add_argument("--no", help="Negative prompt (comma separated)")
+    p_remix.add_argument("--tile", action="store_true", help="Enable tile mode")
+    p_remix.add_argument("--raw", action="store_true", help="Enable raw mode")
+    p_remix.add_argument("--draft", action="store_true", help="Enable draft mode")
+    p_remix.add_argument("--sref", help="Style reference (local file, URL, or code)")
+    p_remix.add_argument("--sw", type=StyleWeight, help="Style weight: 0-1000, default 100")  # type: ignore[arg-type]
+    p_remix.add_argument("--sv", type=StyleVersion, default=None,  # type: ignore[arg-type]
+                         help="Style version: 4, 6, 7, 8")
+    p_remix.add_argument("--oref", help="Object/character reference (local file or URL)")
+    p_remix.add_argument("--ow", type=OmniWeight, help="1-1000, default 100")  # type: ignore[arg-type]
+    p_remix.add_argument("-p", "--personalize", nargs="?", const="", default=None,
+                         help="Personalization code (omit value for default)")
+    p_remix.add_argument("--niji", type=int, default=None, help="Niji model version (e.g. 7)")
+    p_remix.add_argument("-v", "--version", type=int, default=7,
+                         help="Model version: 6 or 7 (default: 7)")
+    p_remix.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)  # type: ignore[arg-type]
+    p_remix.add_argument("--visibility", type=VisibilityMode, default=None)  # type: ignore[arg-type]
     p_remix.add_argument("-o", "--output", default="./images", help="Output directory")
     p_remix.add_argument("--size", type=int, default=640, help="Image download size")
 

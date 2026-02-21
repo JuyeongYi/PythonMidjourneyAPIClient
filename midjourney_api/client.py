@@ -300,42 +300,59 @@ class MidjourneyClient:
         self,
         job_id: str,
         index: int,
-        new_prompt: str,
+        prompt: str,
         strong: bool = True,
         *,
+        image: str | None = None,
+        version: int = 7,
         wait: bool = True,
         poll_interval: float = 5,
         timeout: float = 600,
         mode: str = "fast",
         stealth: bool = False,
+        **params,
     ) -> Job:
         """완료된 imagine 작업을 새 프롬프트로 리믹스합니다.
 
-        vary와 유사하지만 프롬프트를 변경할 수 있습니다.
+        imagine과 동일하게 파라미터를 처리합니다 (create_params, sref/oref 업로드 등).
 
         매개변수:
             job_id: 완료된 imagine 작업 ID.
             index: 리믹스할 그리드 이미지 인덱스 (0-3).
-            new_prompt: 리믹스에 사용할 새 프롬프트 전체 텍스트.
+            prompt: 새 프롬프트 텍스트.
             strong: True이면 Strong, False이면 Subtle 리믹스.
+            image: 이미지 프롬프트 — 로컬 파일 경로 또는 URL.
+            version: Midjourney 모델 버전 (기본값: 7).
             wait: True이면 작업이 완료될 때까지 폴링합니다.
             poll_interval: 상태 폴링 간격 (초).
             timeout: 대기할 최대 시간 (초).
             mode: 속도 모드 ('fast', 'relax', 'turbo').
             stealth: True이면 스텔스(비공개) 모드로 생성합니다.
+            **params: 버전별 파라미터 (ar, stylize, sref, oref 등).
 
         반환값:
             결과가 담긴 Job 객체.
 
         예외:
+            ValidationError: 파라미터가 유효하지 않은 경우.
             JobFailedError: 작업이 실패한 경우.
             MidjourneyError: 타임아웃 또는 기타 오류 발생 시.
         """
+        image, _ = self._resolve_image_refs(image, params)
+
+        if image:
+            prompt = f"{image} {prompt}"
+
+        p = create_params(version=version, prompt=prompt, **params)
+        p.validate()
+        new_prompt = p.build_prompt()
+
         job = self._api.submit_remix(
             job_id, index, new_prompt, strong=strong, mode=mode, private=stealth,
         )
         label = "Strong" if strong else "Subtle"
         self._log(f"Remix ({label}) submitted: {job.id}")
+        self._log(f"Prompt: {new_prompt}")
 
         if not wait:
             return job
