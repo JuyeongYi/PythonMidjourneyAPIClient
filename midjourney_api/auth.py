@@ -1,7 +1,7 @@
-"""Authentication module for Midjourney API.
+"""Midjourney API 인증 모듈.
 
-Handles Firebase Auth token management: login via Playwright,
-token refresh via Firebase REST API, and JWT parsing.
+Firebase Auth 토큰 관리를 처리합니다: Playwright를 통한 로그인,
+Firebase REST API를 통한 토큰 갱신, JWT 파싱.
 """
 
 from __future__ import annotations
@@ -24,12 +24,12 @@ from midjourney_api.exceptions import AuthenticationError
 
 
 class MidjourneyAuth:
-    """Manages authentication state and token lifecycle.
+    """인증 상태 및 토큰 수명 주기를 관리합니다.
 
-    Usage:
-        auth = MidjourneyAuth()        # loads refresh token from .env
-        auth.ensure_valid_token()       # refreshes ID token if needed
-        headers = auth.get_headers()    # returns auth headers for requests
+    사용법:
+        auth = MidjourneyAuth()        # .env에서 refresh token 로드
+        auth.ensure_valid_token()       # 필요 시 ID 토큰 갱신
+        headers = auth.get_headers()    # 요청용 인증 헤더 반환
     """
 
     def __init__(self, refresh_token: str | None = None, env_path: str = ".env"):
@@ -56,14 +56,14 @@ class MidjourneyAuth:
         return self._id_token
 
     def ensure_valid_token(self) -> None:
-        """Refresh the ID token if it's expired or about to expire (within 60s)."""
+        """ID 토큰이 만료됐거나 곧 만료될 경우(60초 이내) 갱신합니다."""
         if not self._refresh_token:
             raise AuthenticationError("No refresh token. Run login() or set MJ_REFRESH_TOKEN in .env")
         if time.time() >= self._token_expiry - 60:
             self._do_refresh()
 
     def _do_refresh(self) -> None:
-        """Exchange refresh token for a new ID token via Firebase REST API."""
+        """Firebase REST API를 통해 refresh token으로 새 ID 토큰을 교환합니다."""
         try:
             resp = httpx.post(
                 FIREBASE_TOKEN_URL,
@@ -89,8 +89,8 @@ class MidjourneyAuth:
 
         new_refresh_token = data.get("refresh_token", self._refresh_token)
         if new_refresh_token != self._refresh_token:
-            # Firebase rotated the refresh token — persist it so other sessions
-            # (e.g. on a different PC) can use the latest token.
+            # Firebase가 refresh token을 교체한 경우 — 다른 세션에서도
+            # 최신 토큰을 사용할 수 있도록 저장합니다.
             self._refresh_token = new_refresh_token
             if self._env_path.exists():
                 set_key(str(self._env_path), "MJ_REFRESH_TOKEN", new_refresh_token)
@@ -101,10 +101,10 @@ class MidjourneyAuth:
         self._user_id = self._parse_user_id(self._id_token)
 
     def _parse_user_id(self, id_token: str) -> str:
-        """Extract midjourney_id from the JWT payload."""
+        """JWT 페이로드에서 midjourney_id를 추출합니다."""
         try:
             payload_b64 = id_token.split(".")[1]
-            # Fix padding
+            # 패딩 보정
             padding = 4 - len(payload_b64) % 4
             if padding != 4:
                 payload_b64 += "=" * padding
@@ -117,7 +117,7 @@ class MidjourneyAuth:
             raise AuthenticationError(f"Failed to parse JWT: {e}") from e
 
     def cookie_header(self) -> str:
-        """Return the Cookie header string with both ID and refresh tokens."""
+        """ID 토큰과 refresh 토큰이 모두 포함된 Cookie 헤더 문자열을 반환합니다."""
         self.ensure_valid_token()
         return (
             f"{ID_COOKIE_NAME}={self._id_token}; "
@@ -125,11 +125,11 @@ class MidjourneyAuth:
         )
 
     def login(self, force: bool = False) -> None:
-        """Open a browser for Google OAuth login and extract the refresh token.
+        """Google OAuth 로그인을 위해 브라우저를 열고 refresh token을 추출합니다.
 
-        Args:
-            force: If True, clear the cached browser session before opening
-                   the browser. Use this to switch accounts.
+        매개변수:
+            force: True이면 브라우저를 열기 전에 캐시된 브라우저 세션을 초기화합니다.
+                   계정을 전환할 때 사용합니다.
         """
         try:
             from playwright.sync_api import sync_playwright
@@ -159,7 +159,7 @@ class MidjourneyAuth:
             page = context.pages[0] if context.pages else context.new_page()
             page.goto("https://www.midjourney.com/")
 
-            # Wait for user to complete login — poll for the refresh token cookie
+            # 로그인 완료 대기 — refresh token 쿠키 폴링
             refresh_token = ""  # nosec B105
             print("Waiting for login to complete...")
             while not refresh_token:
@@ -175,7 +175,7 @@ class MidjourneyAuth:
         self._refresh_token = refresh_token
         self._do_refresh()
 
-        # Save to .env
+        # .env에 저장
         if not self._env_path.exists():
             self._env_path.write_text("")
         set_key(str(self._env_path), "MJ_REFRESH_TOKEN", refresh_token)

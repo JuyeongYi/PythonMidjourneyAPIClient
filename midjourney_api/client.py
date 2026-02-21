@@ -1,4 +1,4 @@
-"""High-level Midjourney client."""
+"""Midjourney 고수준 클라이언트."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from midjourney_api.params import create_params
 
 
 class MidjourneyClient:
-    """High-level client for generating images with Midjourney.
+    """Midjourney로 이미지를 생성하는 고수준 클라이언트.
 
     Usage:
         client = MidjourneyClient()
@@ -59,11 +59,11 @@ class MidjourneyClient:
         return self._auth.user_id
 
     def login(self, force: bool = False) -> None:
-        """Open browser for Google OAuth login.
+        """Google OAuth 로그인을 위해 브라우저를 엽니다.
 
-        Args:
-            force: If True, clear the cached browser session before opening.
-                   Use this to switch accounts.
+        매개변수:
+            force: True이면 브라우저를 열기 전에 캐시된 세션을 초기화합니다.
+                   계정을 전환할 때 사용하세요.
         """
         self._auth.login(force=force)
         self._api.close()
@@ -74,7 +74,7 @@ class MidjourneyClient:
         )
 
     def _upload_if_local(self, value: str) -> str:
-        """If value is a local file path, upload and return CDN URL."""
+        """값이 로컬 파일 경로인 경우 업로드하고 CDN URL을 반환합니다."""
         if os.path.exists(value):
             self._log(f"  Uploading {value}...")
             cdn_url = self._api.upload_image(value)
@@ -85,9 +85,9 @@ class MidjourneyClient:
     def _resolve_image_refs(
         self, image: str | None, params: dict,
     ) -> tuple[str | None, dict[str, int]]:
-        """Upload local files for image/sref/oref, return (image_url, metadata).
+        """image/sref/oref의 로컬 파일을 업로드하고 (image_url, metadata)를 반환합니다.
 
-        Casting to typed params is left to create_params().
+        타입 파라미터로의 캐스팅은 create_params()에 위임합니다.
         """
         metadata: dict[str, int] = {}
 
@@ -119,25 +119,25 @@ class MidjourneyClient:
         mode: str = "fast",
         **params,
     ) -> Job:
-        """Generate images from a text prompt.
+        """텍스트 프롬프트로 이미지를 생성합니다.
 
-        Args:
-            prompt: Text description of the desired image.
-            image: Image prompt — local file path or URL.
-            version: Midjourney model version (default: 7).
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait for completion.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            **params: Version-specific parameters (ar, stylize, chaos, etc.).
+        매개변수:
+            prompt: 원하는 이미지에 대한 텍스트 설명.
+            image: 이미지 프롬프트 — 로컬 파일 경로 또는 URL.
+            version: Midjourney 모델 버전 (기본값: 7).
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 완료를 기다리는 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            **params: 버전별 파라미터 (ar, stylize, chaos 등).
 
-        Returns:
-            Job object with results (image_urls populated if wait=True).
+        반환값:
+            결과가 담긴 Job 객체 (wait=True인 경우 image_urls 포함).
 
-        Raises:
-            ValidationError: If parameters are invalid.
-            JobFailedError: If the job fails.
-            MidjourneyError: On timeout or other errors.
+        예외:
+            ValidationError: 파라미터가 유효하지 않은 경우.
+            JobFailedError: 작업이 실패한 경우.
+            MidjourneyError: 타임아웃 또는 기타 오류 발생 시.
         """
         image, metadata = self._resolve_image_refs(image, params)
 
@@ -159,7 +159,7 @@ class MidjourneyClient:
     def _poll_job(
         self, job_id: str, interval: float, timeout: float
     ) -> Job:
-        """Poll /api/imagine until the job appears (= completed)."""
+        """/api/imagine을 작업이 나타날 때까지 폴링합니다 (= 완료)."""
         start = time.time()
         self._log("  Waiting for completion...")
 
@@ -189,7 +189,7 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Create a variation of a generated image."""
+        """생성된 이미지의 변형을 생성합니다."""
         job = self._api.submit_vary(job_id, index, strong=strong, mode=mode)
         label = "Strong" if strong else "Subtle"
         self._log(f"Vary ({label}) submitted: {job.id}")
@@ -209,7 +209,7 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Upscale a generated image."""
+        """생성된 이미지를 업스케일합니다."""
         job = self._api.submit_upscale(
             job_id, index, upscale_type=upscale_type, mode=mode,
         )
@@ -234,7 +234,7 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
     ) -> Job:
-        """Pan (extend) an image in a direction."""
+        """이미지를 특정 방향으로 팬(확장)합니다."""
         job = self._api.submit_pan(
             job_id, index, direction=direction, prompt=prompt, mode=mode,
         )
@@ -260,25 +260,25 @@ class MidjourneyClient:
         mode: str = "fast",
         stealth: bool = False,
     ) -> Job:
-        """Generate an animation from a completed imagine job.
+        """완료된 imagine 작업으로부터 애니메이션을 생성합니다.
 
-        Args:
-            job_id: Completed imagine job ID.
-            index: Image index within the grid (0-3).
-            prompt: Optional additional prompt text.
-            end_image: Local file or URL for the end frame. If provided, uses
-                       ``vid_1.1_i2v_start_end`` with ``--end {url}``.
-            motion: Motion intensity ("low" or "high").
-            batch_size: Number of video variants to generate (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            stealth: If True, generate in stealth (private) mode.
+        매개변수:
+            job_id: 완료된 imagine 작업 ID.
+            index: 그리드 내 이미지 인덱스 (0-3).
+            prompt: 선택적 추가 프롬프트 텍스트.
+            end_image: 끝 프레임의 로컬 파일 또는 URL. 제공 시
+                       ``vid_1.1_i2v_start_end``와 ``--end {url}``을 사용합니다.
+            motion: 모션 강도 ("low" 또는 "high").
+            batch_size: 생성할 비디오 변형 수 (``--bs N``). 기본값 1.
+            resolution: 비디오 해상도 ('480' 또는 '720').
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            stealth: True이면 스텔스(비공개) 모드로 생성합니다.
 
-        Returns:
-            Completed Job with video_url()/gif_url() available.
+        반환값:
+            video_url()/gif_url()을 사용할 수 있는 완료된 Job.
         """
         end_url = self._upload_if_local(end_image) if end_image else None
         job = self._api.submit_animate(
@@ -306,33 +306,33 @@ class MidjourneyClient:
         mode: str = "fast",
         stealth: bool = False,
     ) -> Job:
-        """Generate an animation from image files.
+        """이미지 파일로부터 애니메이션을 생성합니다.
 
-        Modes:
-        - Single image (end_image=None):    ``vid_1.1_i2v``
-        - Start+end (end_image=<file/URL>): ``vid_1.1_i2v_start_end``
-        - Start+loop (end_image="loop"):    ``vid_1.1_i2v_start_end``, ``--motion {motion}``
+        모드:
+        - 단일 이미지 (end_image=None):      ``vid_1.1_i2v``
+        - 시작+끝 (end_image=<파일/URL>):    ``vid_1.1_i2v_start_end``
+        - 시작+루프 (end_image="loop"):      ``vid_1.1_i2v_start_end``, ``--motion {motion}``
 
-        Args:
-            start_image: Local file or URL for the start frame (auto-uploaded if local).
-            end_image: Local file/URL for end frame, "loop" for loop mode, or None.
-            motion: Motion intensity ("low" or "high").
-            prompt: Optional text prompt.
-            batch_size: Number of video variants (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            stealth: If True, generate in stealth (private) mode.
+        매개변수:
+            start_image: 시작 프레임의 로컬 파일 또는 URL (로컬인 경우 자동 업로드).
+            end_image: 끝 프레임의 로컬 파일/URL, 루프 모드의 경우 "loop", 또는 None.
+            motion: 모션 강도 ("low" 또는 "high").
+            prompt: 선택적 텍스트 프롬프트.
+            batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
+            resolution: 비디오 해상도 ('480' 또는 '720').
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            stealth: True이면 스텔스(비공개) 모드로 생성합니다.
 
-        Returns:
-            Completed Job with video_url()/gif_url() available.
+        반환값:
+            video_url()/gif_url()을 사용할 수 있는 완료된 Job.
         """
         start_url = self._upload_if_local(start_image)
         end_url: str | None
         if end_image is None or end_image == "loop":
-            end_url = end_image  # None or "loop" — not a file path
+            end_url = end_image  # None 또는 'loop' — 파일 경로가 아님
         else:
             end_url = self._upload_if_local(end_image)
 
@@ -363,30 +363,30 @@ class MidjourneyClient:
         mode: str = "fast",
         stealth: bool = False,
     ) -> Job:
-        """Extend a completed video job.
+        """완료된 비디오 작업을 연장합니다.
 
-        Args:
-            job_id: Completed video job ID to extend.
-            index: Batch variant index to extend (default 0).
-            prompt: Optional text prompt to guide the extension direction.
-            end_image: End frame (local file/URL) or "loop" for seamless loop.
-                       None = just extend. Switches to vid_1.1_i2v_start_end mode.
-            motion: Motion intensity ("low" or "high").
-            batch_size: Number of video variants (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            wait: If True, poll until the job completes.
-            poll_interval: Seconds between status polls.
-            timeout: Maximum seconds to wait.
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            stealth: If True, generate in stealth (private) mode.
+        매개변수:
+            job_id: 연장할 완료된 비디오 작업 ID.
+            index: 연장할 배치 변형 인덱스 (기본값 0).
+            prompt: 연장 방향을 안내하는 선택적 텍스트 프롬프트.
+            end_image: 끝 프레임 (로컬 파일/URL) 또는 매끄러운 루프를 위한 "loop".
+                       None = 단순 연장. vid_1.1_i2v_start_end 모드로 전환됩니다.
+            motion: 모션 강도 ("low" 또는 "high").
+            batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
+            resolution: 비디오 해상도 ('480' 또는 '720').
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            stealth: True이면 스텔스(비공개) 모드로 생성합니다.
 
-        Returns:
-            Completed Job with video_url()/gif_url() available.
+        반환값:
+            video_url()/gif_url()을 사용할 수 있는 완료된 Job.
         """
         if end_image and end_image != "loop":
             end_url: str | None = self._upload_if_local(end_image)
         else:
-            end_url = end_image  # None or "loop"
+            end_url = end_image  # None 또는 'loop'
         job = self._api.submit_extend_video(
             job_id, index=index, end_url=end_url, motion=motion,
             batch_size=batch_size, resolution=resolution, mode=mode, private=stealth,
@@ -405,16 +405,16 @@ class MidjourneyClient:
         size: int | None = None,
         batch_size: int = 1,
     ) -> list[Path]:
-        """Download a completed animation video to disk.
+        """완료된 애니메이션 비디오를 디스크에 다운로드합니다.
 
-        Args:
-            job: Completed video Job.
-            output_dir: Directory to save the video.
-            size: Resolution (e.g. 1080 for social). None = raw original.
-            batch_size: Number of variants to download (matches --batch-size used at submit).
+        매개변수:
+            job: 완료된 비디오 Job.
+            output_dir: 비디오를 저장할 디렉토리.
+            size: 해상도 (예: 소셜용 1080). None = 원본 그대로.
+            batch_size: 다운로드할 변형 수 (제출 시 사용한 --batch-size와 일치).
 
-        Returns:
-            List of paths to saved .mp4 files.
+        반환값:
+            저장된 .mp4 파일 경로 목록.
         """
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
@@ -443,15 +443,15 @@ class MidjourneyClient:
         size: int | None = None,
         batch_size: int = 1,
     ) -> list[bytes]:
-        """Download a completed animation video as raw bytes (no disk I/O).
+        """완료된 애니메이션 비디오를 바이트로 다운로드합니다 (디스크 I/O 없음).
 
-        Args:
-            job: Completed video Job.
-            size: Resolution (e.g. 1080 for social). None = raw original.
-            batch_size: Number of variants to download (matches --batch-size used at submit).
+        매개변수:
+            job: 완료된 비디오 Job.
+            size: 해상도 (예: 소셜용 1080). None = 원본 그대로.
+            batch_size: 다운로드할 변형 수 (제출 시 사용한 --batch-size와 일치).
 
-        Returns:
-            List of raw MP4 bytes, one per batch variant.
+        반환값:
+            배치 변형별 원시 MP4 바이트 목록.
         """
         result: list[bytes] = []
         for i in range(batch_size):
@@ -468,7 +468,7 @@ class MidjourneyClient:
         size: int = 640,
         indices: list[int] | None = None,
     ) -> list[Path]:
-        """Download generated images to disk."""
+        """생성된 이미지를 디스크에 다운로드합니다."""
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
 
@@ -498,7 +498,7 @@ class MidjourneyClient:
         size: int = 640,
         indices: list[int] | None = None,
     ) -> list[bytes]:
-        """Download generated images as raw bytes (no disk I/O)."""
+        """생성된 이미지를 바이트로 다운로드합니다 (디스크 I/O 없음)."""
         if indices is None:
             count = len(job.image_urls) if job.image_urls else 4
             indices = list(range(count))
@@ -513,14 +513,14 @@ class MidjourneyClient:
         return result
 
     def list_jobs(self, limit: int = 50) -> list[Job]:
-        """List recent image generation jobs."""
+        """최근 이미지 생성 작업을 나열합니다."""
         jobs = self._api.get_imagine_list(page_size=limit)
         return jobs[:limit]
 
     def get_settings(self) -> UserSettings:
-        """Get current user settings."""
+        """현재 사용자 설정을 가져옵니다."""
         return self._api.get_user_state()
 
     def get_queue(self) -> dict:
-        """Get current job queue status."""
+        """현재 작업 큐 상태를 가져옵니다."""
         return self._api.get_user_queue()

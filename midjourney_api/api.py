@@ -1,4 +1,4 @@
-"""Low-level REST API wrapper for Midjourney."""
+"""Midjourney REST API 저수준 래퍼."""
 
 from __future__ import annotations
 
@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class MidjourneyAPI:
-    """Low-level HTTP client for the Midjourney REST API.
+    """Midjourney REST API 저수준 HTTP 클라이언트.
 
-    Uses curl_cffi to impersonate Chrome's TLS fingerprint,
-    bypassing Cloudflare bot protection.
+    curl_cffi를 사용하여 Chrome의 TLS 핑거프린트를 모방함으로써
+    Cloudflare 봇 보호를 우회합니다.
     """
 
     def __init__(
@@ -43,7 +43,7 @@ class MidjourneyAPI:
         self._session.close()
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
-        """Make an authenticated request."""
+        """인증된 요청을 수행합니다."""
         self._auth.ensure_valid_token()
 
         url = f"{BASE_URL}{path}"
@@ -56,8 +56,8 @@ class MidjourneyAPI:
         }
         kwargs.pop("cookies", None)
 
-        # curl_cffi uses 'data' for form and 'json' kwarg doesn't exist;
-        # serialize JSON manually
+        # curl_cffi는 폼 데이터에 'data'를 사용하며 'json' 키워드 인자가 없으므로
+        # JSON을 수동으로 직렬화합니다
         json_body = kwargs.pop("json", None)
         if json_body is not None:
             headers["Content-Type"] = "application/json"
@@ -109,9 +109,9 @@ class MidjourneyAPI:
         return resp.json() if resp.content else None
 
     def upload_image(self, file_path: str) -> str:
-        """Upload a local image file and return its CDN URL.
+        """로컬 이미지 파일을 업로드하고 CDN URL을 반환합니다.
 
-        Uses /api/storage-upload-file with multipart/form-data.
+        /api/storage-upload-file에 multipart/form-data 형식으로 업로드합니다.
         """
         self._auth.ensure_valid_token()
 
@@ -154,7 +154,7 @@ class MidjourneyAPI:
         private: bool = False,
         metadata: dict | None = None,
     ) -> Job:
-        """Submit an image generation job."""
+        """이미지 생성 작업을 제출합니다."""
         full_prompt = params.build_prompt()
         user_id = self._auth.user_id
 
@@ -169,7 +169,7 @@ class MidjourneyAPI:
 
         data = self._request("POST", "/api/submit-jobs", json=payload)
 
-        # Response: {"success": [{"job_id": "..."}], "failure": [...]}
+        # 응답 형식: {"success": [{"job_id": "..."}], "failure": [...]}
         job_id = ""
         if isinstance(data, dict):
             failures = data.get("failure", [])
@@ -191,7 +191,7 @@ class MidjourneyAPI:
             user_id=user_id,
         )
 
-    # -- Post-processing methods ------------------------------------------
+    # -- 후처리 메서드 ------------------------------------------
 
     def _submit_postprocess(
         self,
@@ -202,7 +202,7 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit a post-processing job (vary/upscale/pan)."""
+        """후처리 작업(vary/upscale/pan)을 제출합니다."""
         user_id = self._auth.user_id
 
         payload = {
@@ -245,7 +245,7 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit a Vary (Strong/Subtle) job."""
+        """Vary (Strong/Subtle) 작업을 제출합니다."""
         return self._submit_postprocess(
             job_id, index, "vary",
             extra={"strong": strong},
@@ -260,7 +260,7 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit an Upscale job."""
+        """Upscale 작업을 제출합니다."""
         return self._submit_postprocess(
             job_id, index, "upscale",
             extra={"type": upscale_type},
@@ -276,7 +276,7 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit a Pan job."""
+        """Pan 작업을 제출합니다."""
         return self._submit_postprocess(
             job_id, index, "pan",
             extra={
@@ -288,7 +288,7 @@ class MidjourneyAPI:
             mode=mode, private=private,
         )
 
-    # -- Animation methods ------------------------------------------------
+    # -- 애니메이션 메서드 ------------------------------------------------
 
     def _check_resolution(self, resolution: str) -> None:
         valid = {r.value for r in VideoResolution}
@@ -307,7 +307,7 @@ class MidjourneyAPI:
         mode: str,
         private: bool,
     ) -> dict:
-        """Build common video submit payload."""
+        """비디오 제출 공통 페이로드를 빌드합니다."""
         return {
             "t": "video",
             "videoType": video_type,
@@ -325,7 +325,7 @@ class MidjourneyAPI:
         }
 
     def _extract_video_job_id(self, data: Any) -> str:
-        """Extract job_id from /api/submit-jobs video response."""
+        """/api/submit-jobs 비디오 응답에서 job_id를 추출합니다."""
         if isinstance(data, dict):
             success = data.get("success", [])
             if success:
@@ -344,19 +344,19 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit an Image-to-Video animation job from an imagine result.
+        """imagine 결과로부터 이미지-to-비디오 애니메이션 작업을 제출합니다.
 
-        Args:
-            job_id: Completed imagine job ID to animate.
-            index: Image index within the grid (0-3).
-            prompt: Optional additional prompt text.
-            end_url: CDN URL for the end frame. If provided, uses
-                     ``vid_1.1_i2v_start_end`` with ``--end {url}``.
-            motion: Motion intensity ("low" or "high").
-            batch_size: Number of video variants to generate (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            private: Whether to make the job private (stealth).
+        매개변수:
+            job_id: 애니메이션할 완료된 imagine 작업 ID.
+            index: 그리드 내 이미지 인덱스 (0-3).
+            prompt: 선택적 추가 프롬프트 텍스트.
+            end_url: 끝 프레임의 CDN URL. 제공 시
+                     ``--end {url}``과 함께 ``vid_1.1_i2v_start_end``를 사용합니다.
+            motion: 모션 강도 ("low" 또는 "high").
+            batch_size: 생성할 비디오 변형 수 (``--bs N``). 기본값 1.
+            resolution: 비디오 해상도 ('480' 또는 '720').
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            private: 작업을 비공개(스텔스)로 설정할지 여부.
         """
         self._check_resolution(resolution)
         parts = []
@@ -407,22 +407,22 @@ class MidjourneyAPI:
         mode: str = "fast",
         private: bool = False,
     ) -> Job:
-        """Submit an animation from image files.
+        """이미지 파일로부터 애니메이션 작업을 제출합니다.
 
-        Modes:
-        - Single image (end_url=None):  ``vid_1.1_i2v_{res}``, ``animateMode=manual``
-        - Start+end (end_url=<url>):    ``vid_1.1_i2v_start_end_{res}``
-        - Start+loop (end_url="loop"):  ``vid_1.1_i2v_start_end_{res}``, ``--motion {motion}``
+        모드:
+        - 단일 이미지 (end_url=None):  ``vid_1.1_i2v_{res}``, ``animateMode=manual``
+        - 시작+끝 (end_url=<url>):     ``vid_1.1_i2v_start_end_{res}``
+        - 시작+루프 (end_url="loop"):  ``vid_1.1_i2v_start_end_{res}``, ``--motion {motion}``
 
-        Args:
-            start_url: CDN URL of the start frame image.
-            end_url: CDN URL of end frame, "loop" for looping, or None for single-image mode.
-            motion: Motion intensity ("low" or "high"). Used with end_url="loop".
-            prompt: Optional text prompt.
-            batch_size: Number of video variants (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            private: Whether to make the job private.
+        매개변수:
+            start_url: 시작 프레임 이미지의 CDN URL.
+            end_url: 끝 프레임의 CDN URL, 루프는 "loop", 단일 이미지 모드는 None.
+            motion: 모션 강도 ("low" 또는 "high"). end_url="loop"일 때 사용.
+            prompt: 선택적 텍스트 프롬프트.
+            batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
+            resolution: 비디오 해상도 ('480' 또는 '720').
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            private: 작업을 비공개로 설정할지 여부.
         """
         self._check_resolution(resolution)
 
@@ -476,22 +476,22 @@ class MidjourneyAPI:
         private: bool = False,
         prompt: str = "",
     ) -> Job:
-        """Extend an existing video job.
+        """기존 비디오 작업을 연장합니다.
 
-        Two modes depending on end_url:
-        - ``end_url=None``:   ``vid_1.1_i2v_extend`` (lengthen the video)
+        end_url에 따른 두 가지 모드:
+        - ``end_url=None``:   ``vid_1.1_i2v_extend`` (비디오 길이 연장)
         - ``end_url="loop"``: ``vid_1.1_i2v_start_end`` + ``--end loop``
         - ``end_url=<url>``:  ``vid_1.1_i2v_start_end`` + ``--end {url}``
 
-        Args:
-            job_id: Completed video job ID to extend.
-            index: Batch variant index to extend (default 0).
-            end_url: End frame URL, "loop" for seamless loop, or None to just extend.
-            motion: Motion intensity ("low" or "high").
-            batch_size: Number of video variants (``--bs N``). Default 1.
-            resolution: Video resolution ('480' or '720').
-            mode: Speed mode ('fast', 'relax', 'turbo').
-            private: Whether to make the job private.
+        매개변수:
+            job_id: 연장할 완료된 비디오 작업 ID.
+            index: 연장할 배치 변형 인덱스 (기본값 0).
+            end_url: 끝 프레임 URL, 매끄러운 루프는 "loop", 단순 연장은 None.
+            motion: 모션 강도 ("low" 또는 "high").
+            batch_size: 비디오 변형 수 (``--bs N``). 기본값 1.
+            resolution: 비디오 해상도 ('480' 또는 '720').
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            private: 작업을 비공개로 설정할지 여부.
         """
         self._check_resolution(resolution)
 
@@ -543,10 +543,10 @@ class MidjourneyAPI:
             event_type=event_type,
         )
 
-    # -- Job status & listing ----------------------------------------------
+    # -- 작업 상태 및 목록 조회 ----------------------------------------------
 
     def get_job_status(self, job_id: str) -> Job | None:
-        """Check if a job appears in the imagine list (= completed)."""
+        """imagine 목록에 작업이 존재하는지 확인합니다 (= 완료 여부 확인)."""
         user_id = self._auth.user_id
         data = self._request(
             "GET", "/api/imagine",
@@ -576,7 +576,7 @@ class MidjourneyAPI:
         return None
 
     def get_imagine_list(self, page_size: int = 1000) -> list[Job]:
-        """Fetch the full list of generated images."""
+        """생성된 이미지 전체 목록을 가져옵니다."""
         user_id = self._auth.user_id
         data = self._request(
             "GET", "/api/imagine",
@@ -585,11 +585,11 @@ class MidjourneyAPI:
         return self._parse_jobs(data)
 
     def get_user_queue(self) -> dict:
-        """Get the current user's job queue status."""
+        """현재 사용자의 작업 큐 상태를 가져옵니다."""
         return self._request("GET", "/api/user-queue")
 
     def get_user_state(self) -> UserSettings:
-        """Get the current user's mutable settings."""
+        """현재 사용자의 변경 가능한 설정을 가져옵니다."""
         data = self._request("GET", "/api/user-mutable-state")
         if not isinstance(data, dict):
             data = {}
@@ -603,7 +603,7 @@ class MidjourneyAPI:
         )
 
     def _parse_jobs(self, data: Any) -> list[Job]:
-        """Parse API response into Job objects."""
+        """API 응답을 Job 객체 목록으로 파싱합니다."""
         items = []
         if isinstance(data, list):
             items = data

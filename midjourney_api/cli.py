@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command-line interface for Midjourney API client."""
+"""Midjourney API 클라이언트의 커맨드라인 인터페이스."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from midjourney_api.params.types import (
 
 
 def cmd_login(args: argparse.Namespace) -> None:
-    """Handle the login command."""
+    """login 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
 
     client = MidjourneyClient(env_path=args.env, print_log=args.verbose)
@@ -33,7 +33,7 @@ def cmd_login(args: argparse.Namespace) -> None:
 
 
 def _build_imagine_params(args: argparse.Namespace) -> dict:
-    """Collect optional imagine parameters from parsed args."""
+    """파싱된 인자에서 선택적 imagine 파라미터를 수집합니다."""
     pairs = [
         ("ar",          args.ar),
         ("stylize",     args.stylize),
@@ -60,7 +60,7 @@ def _build_imagine_params(args: argparse.Namespace) -> dict:
 
 
 def cmd_imagine(args: argparse.Namespace) -> None:
-    """Handle the imagine command."""
+    """imagine 커맨드를 처리합니다."""
     import sys
     from midjourney_api.client import MidjourneyClient
 
@@ -83,7 +83,7 @@ def cmd_imagine(args: argparse.Namespace) -> None:
 
 
 def cmd_list(args: argparse.Namespace) -> None:
-    """Handle the list command."""
+    """list 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
@@ -96,7 +96,7 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 
 def cmd_vary(args: argparse.Namespace) -> None:
-    """Handle the vary command."""
+    """vary 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
@@ -112,7 +112,7 @@ def cmd_vary(args: argparse.Namespace) -> None:
 
 
 def cmd_upscale(args: argparse.Namespace) -> None:
-    """Handle the upscale command."""
+    """upscale 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
 
     type_map = {"subtle": UpscaleType.SUBTLE, "creative": UpscaleType.CREATIVE}
@@ -129,7 +129,7 @@ def cmd_upscale(args: argparse.Namespace) -> None:
 
 
 def cmd_pan(args: argparse.Namespace) -> None:
-    """Handle the pan command."""
+    """pan 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
@@ -146,7 +146,7 @@ def cmd_pan(args: argparse.Namespace) -> None:
 
 
 def cmd_animate(args: argparse.Namespace) -> None:
-    """Handle the animate command (i2v from imagine)."""
+    """animate 커맨드를 처리합니다 (imagine에서 i2v)."""
     from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
@@ -168,7 +168,7 @@ def cmd_animate(args: argparse.Namespace) -> None:
 
 
 def cmd_animate_from_image(args: argparse.Namespace) -> None:
-    """Handle the animate-from-image command (start / start+end / start+loop)."""
+    """animate-from-image 커맨드를 처리합니다 (시작 / 시작+종료 / 시작+루프)."""
     from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
@@ -190,7 +190,7 @@ def cmd_animate_from_image(args: argparse.Namespace) -> None:
 
 
 def cmd_extend_video(args: argparse.Namespace) -> None:
-    """Handle the extend-video command."""
+    """extend-video 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
 
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
@@ -213,7 +213,7 @@ def cmd_extend_video(args: argparse.Namespace) -> None:
 
 
 def cmd_download_video(args: argparse.Namespace) -> None:
-    """Handle the download-video command."""
+    """download-video 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
     from midjourney_api.models import Job
 
@@ -226,7 +226,7 @@ def cmd_download_video(args: argparse.Namespace) -> None:
 
 
 def cmd_download(args: argparse.Namespace) -> None:
-    """Handle the download command."""
+    """download 커맨드를 처리합니다."""
     from midjourney_api.client import MidjourneyClient
     from midjourney_api.models import Job
 

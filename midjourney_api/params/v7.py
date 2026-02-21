@@ -1,4 +1,4 @@
-"""V7-specific Midjourney parameters."""
+"""V7 전용 Midjourney 파라미터."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from midjourney_api.params.types import (
 
 
 class V7Params(BaseParams):
-    """Midjourney V7 parameter set with full validation."""
+    """Midjourney V7 파라미터 세트 (전체 유효성 검사 포함)."""
 
     _CAST_MAP: dict[str, type] = {
         "ar": AspectRatio,
@@ -114,7 +114,7 @@ class V7Params(BaseParams):
         self.visibility = visibility
 
     def validate(self) -> None:
-        """Cross-field validation only — range checks are handled by types."""
+        """교차 필드 유효성 검사만 수행 — 범위 검사는 타입이 담당합니다."""
         errors: list[str] = []
 
         if self.sw is not None and not self.sref:
@@ -143,13 +143,13 @@ class V7Params(BaseParams):
         v = self.version
         parts: list[str] = []
 
-        # Version — must come first
+        # 버전 — 반드시 맨 앞에 위치
         if self.niji is not None:
             parts.append(self.niji.to_prompt(v))
         else:
             parts.append(v.to_prompt())
 
-        # Simple optional params: (attr_value, condition)
+        # 단순 선택적 파라미터: (attr_value, condition)
         simple: list[tuple[object, bool]] = [
             (self.ar,         self.ar is not None),
             (self.chaos,      self.chaos is not None),
@@ -170,7 +170,7 @@ class V7Params(BaseParams):
         if self.no:
             parts.append(f"--no {self.no}")
 
-        # Reference params (order matters: sref+sw, sv, oref+ow, personalize)
+        # 참조 파라미터 (순서 중요: sref+sw, sv, oref+ow, personalize)
         if self.sref:
             parts.append(self.sref.to_prompt(v))
             parts.append((self.sw if self.sw is not None else StyleWeight(100)).to_prompt(v))
@@ -185,7 +185,7 @@ class V7Params(BaseParams):
         if self.personalize is not None:
             parts.append(self.personalize.to_prompt(v))
 
-        # Mode enums
+        # 모드 열거형
         if self.speed is not None:
             parts.append(self.speed.to_prompt(v))
         if self.visibility is not None:

@@ -1,7 +1,7 @@
-"""Parameter system for Midjourney API.
+"""Midjourney API 파라미터 시스템.
 
-Provides version-specific parameter classes via the create_params() factory.
-Raw values (int, str, bool) are automatically cast to typed parameters.
+create_params() 팩토리를 통해 버전별 파라미터 클래스를 제공합니다.
+원시 값(int, str, bool)은 자동으로 타입 파라미터로 캐스팅됩니다.
 """
 
 from __future__ import annotations
@@ -16,20 +16,20 @@ _VERSION_MAP: dict[int, type[BaseParams]] = {
 
 
 def create_params(version: int = 7, **kwargs) -> BaseParams:
-    """Factory function to create version-specific parameters.
+    """버전별 파라미터를 생성하는 팩토리 함수.
 
-    Accepts raw values (int, str, bool) and casts them to typed parameters
-    via the class's _CAST_MAP before constructing.
+    클래스의 _CAST_MAP을 통해 원시 값(int, str, bool)을 타입 파라미터로
+    자동 캐스팅한 후 생성합니다.
 
-    Args:
-        version: Midjourney model version (currently only 7).
-        **kwargs: Version-specific parameters (prompt, ar, stylize, etc.).
+    매개변수:
+        version: Midjourney 모델 버전 (현재 7만 지원).
+        **kwargs: 버전별 파라미터 (prompt, ar, stylize 등).
 
-    Returns:
-        A parameter object for the specified version.
+    반환값:
+        지정된 버전의 파라미터 객체.
 
-    Raises:
-        ValidationError: If version or parameter values are invalid.
+    예외:
+        ValidationError: 버전 또는 파라미터 값이 유효하지 않은 경우.
     """
     v = Version(version)
     cls = _VERSION_MAP.get(v)

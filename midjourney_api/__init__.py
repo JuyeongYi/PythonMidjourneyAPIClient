@@ -1,6 +1,6 @@
-"""Midjourney Python API Client.
+"""Midjourney Python API 클라이언트.
 
-Usage:
+사용법:
     from midjourney_api import MidjourneyClient
 
     with MidjourneyClient() as client:
