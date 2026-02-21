@@ -32,6 +32,33 @@ def cmd_login(args: argparse.Namespace) -> None:
     client.close()
 
 
+def _build_imagine_params(args: argparse.Namespace) -> dict:
+    """Collect optional imagine parameters from parsed args."""
+    pairs = [
+        ("ar",          args.ar),
+        ("stylize",     args.stylize),
+        ("chaos",       args.chaos),
+        ("quality",     args.quality),
+        ("seed",        args.seed),
+        ("weird",       args.weird),
+        ("stop",        args.stop),
+        ("no",          args.no),
+        ("iw",          args.iw),
+        ("tile",        True if args.tile else None),
+        ("raw",         True if args.raw else None),
+        ("draft",       True if args.draft else None),
+        ("sref",        args.sref),
+        ("sw",          args.sw),
+        ("sv",          args.sv),
+        ("oref",        args.oref),
+        ("ow",          args.ow),
+        ("niji",        args.niji),
+        ("personalize", args.personalize),
+        ("visibility",  args.visibility),
+    ]
+    return {k: v for k, v in pairs if v is not None}
+
+
 def cmd_imagine(args: argparse.Namespace) -> None:
     """Handle the imagine command."""
     import sys
@@ -41,55 +68,13 @@ def cmd_imagine(args: argparse.Namespace) -> None:
         print("Error: Version 8 is not yet implemented.", file=sys.stderr)
         sys.exit(1)
 
-    params = {}
-    if args.ar:
-        params["ar"] = args.ar
-    if args.stylize is not None:
-        params["stylize"] = args.stylize
-    if args.chaos is not None:
-        params["chaos"] = args.chaos
-    if args.quality is not None:
-        params["quality"] = args.quality
-    if args.seed is not None:
-        params["seed"] = args.seed
-    if args.weird is not None:
-        params["weird"] = args.weird
-    if args.stop is not None:
-        params["stop"] = args.stop
-    if args.no:
-        params["no"] = args.no
-    if args.iw is not None:
-        params["iw"] = args.iw
-    if args.tile:
-        params["tile"] = True
-    if args.raw:
-        params["raw"] = True
-    if args.draft:
-        params["draft"] = True
-    if args.sref:
-        params["sref"] = args.sref
-    if args.oref:
-        params["oref"] = args.oref
-    if args.ow is not None:
-        params["ow"] = args.ow
-    if args.sw is not None:
-        params["sw"] = args.sw
-    if args.sv is not None:
-        params["sv"] = args.sv
-    if args.niji is not None:
-        params["niji"] = args.niji
-    if args.personalize is not None:
-        params["personalize"] = args.personalize
-    if args.visibility:
-        params["visibility"] = args.visibility
-
     with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
         job = client.imagine(
             args.prompt,
             image=args.image,
             version=args.version,
             mode=args.mode,
-            **params,
+            **_build_imagine_params(args),
         )
         if args.verbose:
             print(f"Job ID: {job.id}")
@@ -271,31 +256,31 @@ def main() -> None:
     p_imagine = sub.add_parser("imagine", help="Generate images from a prompt")
     p_imagine.add_argument("prompt", help="Text prompt")
     p_imagine.add_argument("--image", help="Image prompt (local file or URL)")
-    p_imagine.add_argument("--iw", type=ImageWeight, help="Image weight 0-3 (default 1)")
-    p_imagine.add_argument("--ar", type=AspectRatio, help="Aspect ratio (e.g., 16:9)")
-    p_imagine.add_argument("-s", "--stylize", type=Stylize, help="0-1000")
-    p_imagine.add_argument("-c", "--chaos", type=Chaos, help="0-100")
-    p_imagine.add_argument("-q", "--quality", type=Quality, help="1, 2, or 4")
-    p_imagine.add_argument("--seed", type=Seed, help="0-4294967295")
-    p_imagine.add_argument("-w", "--weird", type=Weird, help="0-3000")
-    p_imagine.add_argument("--stop", type=Stop, help="10-100")
+    p_imagine.add_argument("--iw", type=ImageWeight, help="Image weight 0-3 (default 1)")  # type: ignore[arg-type]
+    p_imagine.add_argument("--ar", type=AspectRatio, help="Aspect ratio (e.g., 16:9)")  # type: ignore[arg-type]
+    p_imagine.add_argument("-s", "--stylize", type=Stylize, help="0-1000")  # type: ignore[arg-type]
+    p_imagine.add_argument("-c", "--chaos", type=Chaos, help="0-100")  # type: ignore[arg-type]
+    p_imagine.add_argument("-q", "--quality", type=Quality, help="1, 2, or 4")  # type: ignore[arg-type]
+    p_imagine.add_argument("--seed", type=Seed, help="0-4294967295")  # type: ignore[arg-type]
+    p_imagine.add_argument("-w", "--weird", type=Weird, help="0-3000")  # type: ignore[arg-type]
+    p_imagine.add_argument("--stop", type=Stop, help="10-100")  # type: ignore[arg-type]
     p_imagine.add_argument("--no", help="Negative prompt (comma separated)")
     p_imagine.add_argument("--tile", action="store_true", help="Enable tile mode")
     p_imagine.add_argument("--raw", action="store_true", help="Enable raw mode")
     p_imagine.add_argument("--draft", action="store_true", help="Enable draft mode")
     p_imagine.add_argument("--sref", help="Style reference (local file, URL, or code)")
-    p_imagine.add_argument("--sw", type=StyleWeight, help="Style weight: 0-1000, default 100")
-    p_imagine.add_argument("--sv", type=StyleVersion, default=None,
+    p_imagine.add_argument("--sw", type=StyleWeight, help="Style weight: 0-1000, default 100")  # type: ignore[arg-type]
+    p_imagine.add_argument("--sv", type=StyleVersion, default=None,  # type: ignore[arg-type]
                            help="Style version: 4, 6, 7, 8 (sv=7+v7 omitted; sv=8 not yet supported)")
     p_imagine.add_argument("--oref", help="Object/character reference (local file or URL)")
-    p_imagine.add_argument("--ow", type=OmniWeight, help="1-1000, default 100")
+    p_imagine.add_argument("--ow", type=OmniWeight, help="1-1000, default 100")  # type: ignore[arg-type]
     p_imagine.add_argument("-p", "--personalize", nargs="?", const="", default=None,
                            help="Personalization code (omit value for default)")
     p_imagine.add_argument("--niji", type=int, default=None, help="Niji model version (e.g. 7)")
     p_imagine.add_argument("-v", "--version", type=int, default=7,
                            help="Model version: 6 or 7 (default: 7)")
-    p_imagine.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
-    p_imagine.add_argument("--visibility", type=VisibilityMode, default=None)
+    p_imagine.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)  # type: ignore[arg-type]
+    p_imagine.add_argument("--visibility", type=VisibilityMode, default=None)  # type: ignore[arg-type]
     p_imagine.add_argument("-o", "--output", default="./images", help="Output directory")
     p_imagine.add_argument("--size", type=int, default=640, help="Image download size")
 

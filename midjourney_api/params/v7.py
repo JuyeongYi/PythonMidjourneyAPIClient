@@ -149,33 +149,28 @@ class V7Params(BaseParams):
         else:
             parts.append(v.to_prompt())
 
-        # Image generation params
-        if self.ar:
-            parts.append(self.ar.to_prompt(v))
-        if self.chaos is not None:
-            parts.append(self.chaos.to_prompt(v))
+        # Simple optional params: (attr_value, condition)
+        simple: list[tuple[object, bool]] = [
+            (self.ar,         self.ar is not None),
+            (self.chaos,      self.chaos is not None),
+            (self.quality,    self.quality is not None),
+            (self.seed,       self.seed is not None),
+            (self.stylize,    self.stylize is not None),
+            (self.weird,      self.weird is not None),
+            (self.stop,       self.stop is not None),
+            (self.tile,       bool(self.tile)),
+            (self.raw,        bool(self.raw)),
+            (self.draft,      bool(self.draft)),
+            (self.iw,         self.iw is not None),
+        ]
+        for param, cond in simple:
+            if cond:
+                parts.append(param.to_prompt(v))  # type: ignore[union-attr]
+
         if self.no:
             parts.append(f"--no {self.no}")
-        if self.quality is not None:
-            parts.append(self.quality.to_prompt(v))
-        if self.seed is not None:
-            parts.append(self.seed.to_prompt(v))
-        if self.stylize is not None:
-            parts.append(self.stylize.to_prompt(v))
-        if self.weird is not None:
-            parts.append(self.weird.to_prompt(v))
-        if self.stop is not None:
-            parts.append(self.stop.to_prompt(v))
-        if self.tile:
-            parts.append(self.tile.to_prompt(v))
-        if self.raw:
-            parts.append(self.raw.to_prompt(v))
-        if self.draft:
-            parts.append(self.draft.to_prompt(v))
-        if self.iw is not None:
-            parts.append(self.iw.to_prompt(v))
 
-        # Reference params
+        # Reference params (order matters: sref+sw, sv, oref+ow, personalize)
         if self.sref:
             parts.append(self.sref.to_prompt(v))
             parts.append((self.sw if self.sw is not None else StyleWeight(100)).to_prompt(v))

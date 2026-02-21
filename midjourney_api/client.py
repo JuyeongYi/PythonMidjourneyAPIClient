@@ -354,6 +354,7 @@ class MidjourneyClient:
         *,
         end_image: str | None = None,
         motion: str | None = None,
+        prompt: str = "",
         batch_size: int = 1,
         resolution: str = "480",
         wait: bool = True,
@@ -361,7 +362,6 @@ class MidjourneyClient:
         timeout: float = 600,
         mode: str = "fast",
         stealth: bool = False,
-        prompt: str = "",
     ) -> Job:
         """Extend a completed video job.
 

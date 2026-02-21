@@ -41,7 +41,7 @@ class MidjourneyAuth:
         self._token_expiry: float = 0
         self._user_id: str = ""
 
-        if self._refresh_token and self._refresh_token != "your_refresh_token_here":
+        if self._refresh_token and self._refresh_token != "your_refresh_token_here":  # nosec B105
             self._do_refresh()
 
     @property
@@ -160,7 +160,7 @@ class MidjourneyAuth:
             page.goto("https://www.midjourney.com/")
 
             # Wait for user to complete login — poll for the refresh token cookie
-            refresh_token = ""
+            refresh_token = ""  # nosec B105
             print("Waiting for login to complete...")
             while not refresh_token:
                 page.wait_for_timeout(2000)
