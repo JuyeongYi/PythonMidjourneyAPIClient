@@ -182,9 +182,14 @@ class OmniWeight(_RangeInt):
 
 
 class StyleVersion(MJParam, int):
-    """Style version (--sv). Valid values: 6, 7, 8."""
+    """Style version (--sv).
+
+    Valid values: 4, 6, 7, 8.
+    - sv=7 with --v 7: omitted from prompt (redundant default)
+    - sv=8: raises NotImplementedError (not yet supported by API)
+    """
     _flag = "--sv"
-    _allowed = (6, 7, 8)
+    _allowed = (4, 6, 7, 8)
 
     def __new__(cls, value: int):
         value = int(value)
