@@ -145,6 +145,23 @@ def cmd_pan(args: argparse.Namespace) -> None:
             client.download_images(job, args.output, size=args.size)
 
 
+def cmd_remix(args: argparse.Namespace) -> None:
+    """remix 커맨드를 처리합니다."""
+    from midjourney_api.client import MidjourneyClient
+
+    with MidjourneyClient(env_path=args.env, print_log=args.verbose) as client:
+        job = client.remix(
+            args.job_id, args.index, args.prompt,
+            strong=(not args.subtle),
+            mode=args.mode,
+            stealth=args.stealth,
+        )
+        if args.verbose:
+            print(f"Job ID: {job.id}")
+        if job.is_completed and args.output:
+            client.download_images(job, args.output, size=args.size)
+
+
 def cmd_animate(args: argparse.Namespace) -> None:
     """animate 커맨드를 처리합니다 (imagine에서 i2v)."""
     from midjourney_api.client import MidjourneyClient
@@ -314,6 +331,17 @@ def main() -> None:
     p_pan.add_argument("-o", "--output", default="./images", help="Output directory")
     p_pan.add_argument("--size", type=int, default=640, help="Image download size")
 
+    # remix
+    p_remix = sub.add_parser("remix", help="Remix an image with a new prompt")
+    p_remix.add_argument("job_id", help="Parent job ID")
+    p_remix.add_argument("index", type=int, help="Image index (0-3)")
+    p_remix.add_argument("prompt", help="New prompt text (full prompt including parameters)")
+    p_remix.add_argument("--subtle", action="store_true", help="Subtle remix (default: Strong)")
+    p_remix.add_argument("--stealth", action="store_true", help="Generate in stealth mode")
+    p_remix.add_argument("--mode", type=SpeedMode, default=SpeedMode.FAST)
+    p_remix.add_argument("-o", "--output", default="./images", help="Output directory")
+    p_remix.add_argument("--size", type=int, default=640, help="Image download size")
+
     # animate (i2v from imagine)
     p_animate = sub.add_parser("animate", help="Generate animation from an imagine job")
     p_animate.add_argument("job_id", help="Source imagine job ID")
@@ -388,6 +416,7 @@ def main() -> None:
         "login": cmd_login,
         "imagine": cmd_imagine,
         "vary": cmd_vary,
+        "remix": cmd_remix,
         "upscale": cmd_upscale,
         "pan": cmd_pan,
         "animate": cmd_animate,

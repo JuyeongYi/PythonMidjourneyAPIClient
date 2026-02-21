@@ -296,6 +296,51 @@ class MidjourneyClient:
             return job
         return self._poll_job(job.id, poll_interval, timeout)
 
+    def remix(
+        self,
+        job_id: str,
+        index: int,
+        new_prompt: str,
+        strong: bool = True,
+        *,
+        wait: bool = True,
+        poll_interval: float = 5,
+        timeout: float = 600,
+        mode: str = "fast",
+        stealth: bool = False,
+    ) -> Job:
+        """완료된 imagine 작업을 새 프롬프트로 리믹스합니다.
+
+        vary와 유사하지만 프롬프트를 변경할 수 있습니다.
+
+        매개변수:
+            job_id: 완료된 imagine 작업 ID.
+            index: 리믹스할 그리드 이미지 인덱스 (0-3).
+            new_prompt: 리믹스에 사용할 새 프롬프트 전체 텍스트.
+            strong: True이면 Strong, False이면 Subtle 리믹스.
+            wait: True이면 작업이 완료될 때까지 폴링합니다.
+            poll_interval: 상태 폴링 간격 (초).
+            timeout: 대기할 최대 시간 (초).
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            stealth: True이면 스텔스(비공개) 모드로 생성합니다.
+
+        반환값:
+            결과가 담긴 Job 객체.
+
+        예외:
+            JobFailedError: 작업이 실패한 경우.
+            MidjourneyError: 타임아웃 또는 기타 오류 발생 시.
+        """
+        job = self._api.submit_remix(
+            job_id, index, new_prompt, strong=strong, mode=mode, private=stealth,
+        )
+        label = "Strong" if strong else "Subtle"
+        self._log(f"Remix ({label}) submitted: {job.id}")
+
+        if not wait:
+            return job
+        return self._poll_job(job.id, poll_interval, timeout)
+
     def animate(
         self,
         job_id: str,

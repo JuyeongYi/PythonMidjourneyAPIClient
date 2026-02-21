@@ -318,6 +318,83 @@ class MidjourneyAPI:
             mode=mode, private=private,
         )
 
+    def submit_remix(
+        self,
+        job_id: str,
+        index: int,
+        new_prompt: str,
+        strong: bool = True,
+        mode: str = "fast",
+        private: bool = False,
+    ) -> Job:
+        """Remix 작업을 제출합니다 (프롬프트 변경 + vary).
+
+        /api/submit-jobs 로 작업을 제출한 뒤,
+        /api/jobs-actions 로 remix 이벤트를 등록합니다.
+
+        매개변수:
+            job_id: 리믹스할 완료된 imagine 작업 ID.
+            index: 그리드 내 이미지 인덱스 (0-3).
+            new_prompt: 리믹스에 사용할 새 프롬프트 전체 텍스트.
+            strong: True이면 Strong, False이면 Subtle 리믹스.
+            mode: 속도 모드 ('fast', 'relax', 'turbo').
+            private: 작업을 비공개(스텔스)로 설정할지 여부.
+
+        반환값:
+            새로 생성된 Job 객체.
+        """
+        user_id = self._auth.user_id
+
+        payload = {
+            "f": {"mode": mode, "private": private},
+            "channelId": f"singleplayer_{user_id}",
+            "roomId": None,
+            "metadata": {
+                "isMobile": None,
+                "imagePrompts": 0,
+                "imageReferences": 0,
+                "characterReferences": 0,
+                "depthReferences": 0,
+                "lightboxOpen": None,
+            },
+            "t": "remix",
+            "strong": strong,
+            "newPrompt": new_prompt,
+            "id": job_id,
+            "index": index,
+        }
+
+        data = self._request("POST", "/api/submit-jobs", json=payload)
+
+        new_job_id = ""
+        prompt = ""
+        parent_id = job_id
+        if isinstance(data, dict):
+            success = data.get("success", [])
+            if success:
+                new_job_id = success[0].get("job_id", "")
+                prompt = success[0].get("prompt", "")
+                meta = success[0].get("meta", {})
+                parent_id = meta.get("parent_id", job_id)
+
+        # remix 이벤트 등록
+        action = "remix" if strong else "remix_subtle"
+        self._request("POST", "/api/jobs-actions", json={
+            "job_id": job_id,
+            "user_id": user_id,
+            "action": action,
+            "child_job_id": new_job_id,
+            "grid_index": index,
+        })
+
+        return Job(
+            id=new_job_id,
+            prompt=prompt,
+            status="pending",
+            user_id=user_id,
+            parent_id=parent_id,
+        )
+
     # -- 애니메이션 메서드 ------------------------------------------------
 
     def _check_resolution(self, resolution: str) -> None:
